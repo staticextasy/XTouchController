@@ -247,28 +247,30 @@ async function setAudioVolume(inputName, volume) {
     // Convert percentage to dB using our -60 to 0 dB scale
     calculatedDb = (volumeValue / 100) * 60 - 60; // Linear interpolation
     
-    // Apply inverse scaling factor to match OBS's scale
-    // If our -18.4 corresponds to OBS's -30, then scalingFactor = -18.4 / -30 ≈ 0.613
-    // So to convert our dB to OBS's dB: obsDb = ourDb / scalingFactor
-    const scalingFactor = -18.4 / -30; // ≈ 0.613
-    const obsDb = calculatedDb / scalingFactor;
-    
-    // Convert OBS's dB to multiplier: multiplier = 10^(obsDb/20)
-    volumeMultiplier = Math.pow(10, obsDb / 20);
+         // Apply the inverse of our human-friendly mapping
+     // Convert our slider percentage back to OBS's dB scale
+     
+     // Inverse of the power curve: obsDb = (sliderValue/100)^(1/1.5) * 60 - 60
+     const normalizedSlider = volumeValue / 100; // 0 to 1 range
+     const normalizedObsDb = Math.pow(normalizedSlider, 1/1.5); // Inverse power curve
+     const obsDb = normalizedObsDb * 60 - 60; // Convert back to -60 to 0 dB range
+     
+     // Convert OBS's dB to multiplier: multiplier = 10^(obsDb/20)
+     volumeMultiplier = Math.pow(10, obsDb / 20);
   }
   
-  console.log(`Setting volume for ${inputName}:`);
-  console.log(`  - Raw slider value: ${volume}%`);
-  console.log(`  - Parsed value: ${volumeValue}%`);
-  console.log(`  - Our calculated dB: ${calculatedDb.toFixed(2)} dB`);
-  console.log(`  - OBS target dB: ${(calculatedDb / (-18.4 / -30)).toFixed(2)} dB`);
-  console.log(`  - Volume multiplier: ${volumeMultiplier.toFixed(6)}`);
-  
-  // Double-check our conversion by converting back
-  const verificationObsDb = volumeMultiplier === 0 ? -60 : 20 * Math.log10(volumeMultiplier);
-  const verificationOurDb = verificationObsDb * (-18.4 / -30);
-  const verificationPercentage = ((verificationOurDb + 60) / 60) * 100;
-  console.log(`  - Verification: ${verificationPercentage.toFixed(2)}% -> ${verificationObsDb.toFixed(2)} dB (OBS)`);
+     console.log(`Setting volume for ${inputName}:`);
+   console.log(`  - Raw slider value: ${volume}%`);
+   console.log(`  - Parsed value: ${volumeValue}%`);
+   console.log(`  - Our calculated dB: ${calculatedDb.toFixed(2)} dB`);
+   console.log(`  - OBS target dB: ${obsDb.toFixed(2)} dB`);
+   console.log(`  - Volume multiplier: ${volumeMultiplier.toFixed(6)}`);
+   
+   // Double-check our conversion by converting back
+   const verificationObsDb = volumeMultiplier === 0 ? -60 : 20 * Math.log10(volumeMultiplier);
+   const verificationNormalizedDb = (verificationObsDb + 60) / 60;
+   const verificationSlider = Math.pow(verificationNormalizedDb, 1.5) * 100;
+   console.log(`  - Verification: ${verificationSlider.toFixed(2)}% -> ${verificationObsDb.toFixed(2)} dB (OBS)`);
   
   // Check if socket is connected
   if (!socket || socket.readyState !== WebSocket.OPEN) {
@@ -394,16 +396,15 @@ function createAudioSourceElement(source) {
     const db = 20 * Math.log10(source.inputVolumeMul);
     initialDb = db;
     
-    // Apply scaling factor to convert OBS's dB to our expected dB
-    // If OBS -30 corresponds to our -18.4, then scalingFactor = -18.4 / -30 ≈ 0.613
-    const scalingFactor = -18.4 / -30; // ≈ 0.613
-    const scaledDb = db * scalingFactor;
-    
-    // Convert dB to percentage: 0% = -60 dB, 100% = 0 dB
-    sliderValue = ((scaledDb + 60) / 60) * 100;
-    
-    // Clamp to valid range
-    sliderValue = Math.max(0, Math.min(100, sliderValue));
+         // Apply the same human-friendly mapping
+     // Convert OBS's dB to a more intuitive percentage
+     
+     // Use the same power curve for consistency
+     const normalizedDb = (db + 60) / 60; // 0 to 1 range
+     sliderValue = Math.pow(normalizedDb, 1.5) * 100; // Power curve for more intuitive feel
+     
+     // Clamp to valid range
+     sliderValue = Math.max(0, Math.min(100, sliderValue));
   }
   
   // Create mute status indicator
@@ -645,36 +646,35 @@ function handleObsMessage(msg) {
       } else if (eventData.inputVolumeMul === 1) {
         newValue = 100; // Full volume
       } else {
-        // Based on the user's report: website -18.4 vs OBS -30
-        // This suggests OBS might be using a different scale
-        // Let's try using OBS's reported dB directly and map it to our slider
-        // Assuming OBS's scale might be something like -infinity to 0 dB
-        // For now, let's use a linear mapping based on the observed values
-        
-        // If OBS reports -30 dB and we want that to correspond to our slider position
-        // We need to find the relationship between OBS's dB scale and our 0-100% scale
-        
-        // Let's try mapping OBS's dB to our slider using a different approach
-        // Since OBS -30 corresponds to our -18.4, there's a scaling factor
-        const scalingFactor = -18.4 / -30; // ≈ 0.613
-        
-        // Apply this scaling factor to convert OBS dB to our expected dB
-        const scaledDb = obsDb * scalingFactor;
-        
-        // Now convert to percentage using our -60 to 0 dB scale
-        newValue = ((scaledDb + 60) / 60) * 100;
-        
-        // Clamp to valid range
-        newValue = Math.max(0, Math.min(100, newValue));
+                 // Make the scaling more human-friendly
+         // Instead of linear scaling, let's use a more intuitive mapping
+         // where lower volumes (like 14%) map to lower slider positions
+         
+         // Convert OBS's dB to a more intuitive percentage
+         // Use a curve that feels more natural to humans
+         
+         // For OBS dB values, let's create a more intuitive mapping:
+         // -60 dB (mute) = 0%
+         // -30 dB = ~25% (instead of 50%)
+         // -20 dB = ~50%
+         // -10 dB = ~75%
+         // 0 dB = 100%
+         
+         // Use a power curve to make it feel more natural
+         const normalizedDb = (obsDb + 60) / 60; // 0 to 1 range
+         newValue = Math.pow(normalizedDb, 1.5) * 100; // Power curve for more intuitive feel
+         
+         // Clamp to valid range
+         newValue = Math.max(0, Math.min(100, newValue));
       }
       
       const currentValue = parseFloat(volumeSlider.value);
       
-      console.log(`  - OBS reported dB: ${obsDb.toFixed(2)} dB`);
-      console.log(`  - OBS volume mul: ${eventData.inputVolumeMul.toFixed(6)}`);
-      console.log(`  - Current slider: ${currentValue}%`);
-      console.log(`  - Calculated percentage: ${newValue.toFixed(2)}%`);
-      console.log(`  - Scaling factor used: ${scalingFactor?.toFixed(3) || 'N/A'}`);
+             console.log(`  - OBS reported dB: ${obsDb.toFixed(2)} dB`);
+       console.log(`  - OBS volume mul: ${eventData.inputVolumeMul.toFixed(6)}`);
+       console.log(`  - Current slider: ${currentValue}%`);
+       console.log(`  - Calculated percentage: ${newValue.toFixed(2)}%`);
+       console.log(`  - Power curve mapping: normalized=${((obsDb + 60) / 60).toFixed(3)} -> slider=${newValue.toFixed(1)}%`);
       
       if (Math.abs(currentValue - newValue) > 0.1) {
         volumeSlider.value = newValue;
@@ -908,22 +908,21 @@ function updateExistingAudioControls(audioSources) {
            // Convert multiplier to dB: dB = 20 * log10(multiplier)
            calculatedDb = 20 * Math.log10(source.inputVolumeMul);
            
-           // Apply scaling factor to convert OBS's dB to our expected dB
-           // If OBS -30 corresponds to our -18.4, then scalingFactor = -18.4 / -30 ≈ 0.613
-           const scalingFactor = -18.4 / -30; // ≈ 0.613
-           const scaledDb = calculatedDb * scalingFactor;
-           
-           // Convert dB to percentage: 0% = -60 dB, 100% = 0 dB
-           newValue = ((scaledDb + 60) / 60) * 100;
-           
-           // Clamp to valid range
-           newValue = Math.max(0, Math.min(100, newValue));
+                       // Apply the same human-friendly mapping as in the event handler
+            // Convert OBS's dB to a more intuitive percentage
+            
+            // Use the same power curve for consistency
+            const normalizedDb = (calculatedDb + 60) / 60; // 0 to 1 range
+            newValue = Math.pow(normalizedDb, 1.5) * 100; // Power curve for more intuitive feel
+            
+            // Clamp to valid range
+            newValue = Math.max(0, Math.min(100, newValue));
          }
          
-         console.log(`Checking ${source.inputName}: current=${currentValue}%, new=${newValue.toFixed(2)}%, diff=${Math.abs(currentValue - newValue).toFixed(2)}`);
-         console.log(`  - OBS volume mul: ${source.inputVolumeMul.toFixed(6)}`);
-         console.log(`  - OBS calculated dB: ${calculatedDb.toFixed(2)} dB`);
-         console.log(`  - Scaled dB: ${(calculatedDb * (-18.4 / -30)).toFixed(2)} dB`);
+                   console.log(`Checking ${source.inputName}: current=${currentValue}%, new=${newValue.toFixed(2)}%, diff=${Math.abs(currentValue - newValue).toFixed(2)}`);
+          console.log(`  - OBS volume mul: ${source.inputVolumeMul.toFixed(6)}`);
+          console.log(`  - OBS calculated dB: ${calculatedDb.toFixed(2)} dB`);
+          console.log(`  - Power curve mapping: normalized=${((calculatedDb + 60) / 60).toFixed(3)} -> slider=${newValue.toFixed(1)}%`);
          
          // Always update the slider to match OBS (remove threshold)
          if (Math.abs(currentValue - newValue) > 0.1) {
