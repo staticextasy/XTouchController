@@ -456,6 +456,7 @@ function createAudioSourceElement(source) {
   const dbValue = audioDiv.querySelector('.db-value');
   
   muteBtn.addEventListener('click', () => {
+    console.log(`🔘 Mute button clicked for: ${source.inputName}`);
     toggleAudioMute(source.inputName);
   });
   
