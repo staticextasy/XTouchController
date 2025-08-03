@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OBS Scene Switcher</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; }
+    button {
+      font-size: 1.5rem;
+      margin: 10px;
+      padding: 15px 30px;
+    }
+  </style>
+</head>
+<body>
+  <h1>OBS Scene Switcher</h1>
+  <div id="scene-buttons">Connecting...</div>
+
+  <script>
+    const password = "ZRuqVAMkCsIDLHrb";
+    const obsIP = "10.0.0.217"; // Replace with your OBS PC IP
+    let socket;
+
+    function createSceneButton(sceneName) {
+      const btn = document.createElement("button");
+      btn.textContent = sceneName;
+      btn.onclick = () => switchScene(sceneName);
+      return btn;
+    }
+
+    function updateStatus(message) {
+      const container = document.getElementById("scene-buttons");
+      container.innerHTML = `<div style="color: #666; font-style: italic;">${message}</div>`;
+      console.log("Status:", message);
+    }
+
+    async function connect() {
+      updateStatus("Connecting to OBS...");
+      socket = new WebSocket(`ws://${obsIP}:4455`);
+
+      socket.onopen = () => {
+        console.log("WebSocket opened");
+        updateStatus("Connected! Authenticating...");
+      };
+
+      socket.onmessage = async (event) => {
+        console.log("Received message:", event.data);
+        const msg = JSON.parse(event.data);
+
+        // Handle identification
+        if (msg.op === 0) {
+          console.log("Received identification:", msg.d);
+          const { authentication, rpcVersion } = msg.d;
+          const { challenge, salt } = authentication;
+          const auth = await computeAuthResponse(password, salt, challenge);
+
+          const identifyMessage = {
+            op: 1,
+            d: {
+              rpcVersion,
+              authentication: auth
+            }
+          };
+          console.log("Sending identify:", identifyMessage);
+          socket.send(JSON.stringify(identifyMessage));
+        }
+
+        // Handle identified
+        if (msg.op === 2) {
+          console.log("Successfully identified!");
+          updateStatus("Authenticated! Fetching scenes...");
+          getSceneList();
+        }
+
+        // Handle request response (success)
+        if (msg.op === 7 && msg.d.requestType === "GetSceneList") {
+          console.log("Scene list response:", msg.d);
+          if (msg.d.responseData && msg.d.responseData.scenes) {
+            const scenes = msg.d.responseData.scenes;
+            const container = document.getElementById("scene-buttons");
+            container.innerHTML = ""; // Clear loading message
+            scenes.forEach(s => {
+              container.appendChild(createSceneButton(s.sceneName));
+            });
+            console.log("Loaded", scenes.length, "scenes");
+          } else {
+            console.error("No scenes in response:", msg.d);
+            updateStatus("No scenes found in response");
+          }
+        }
+
+        // Handle request response (success) - alternative format
+        if (msg.op === 7 && msg.d.requestType === "GetSceneList" && msg.d.responseData) {
+          console.log("Scene list response (alt):", msg.d);
+          const scenes = msg.d.responseData.scenes;
+          const container = document.getElementById("scene-buttons");
+          container.innerHTML = "";
+          scenes.forEach(s => {
+            container.appendChild(createSceneButton(s.sceneName));
+          });
+          console.log("Loaded", scenes.length, "scenes");
+        }
+
+        // Handle errors
+        if (msg.op === 7 && msg.d.error) {
+          console.error("Request error:", msg.d);
+          updateStatus(`Error: ${msg.d.error}`);
+        }
+
+        // Handle authentication failure
+        if (msg.op === 7 && msg.d.error && msg.d.error.includes("authentication")) {
+          console.error("Authentication failed:", msg.d.error);
+          updateStatus("Authentication failed - check password");
+        }
+
+        // Handle scene switch response
+        if (msg.op === 7 && msg.d.requestType === "SetCurrentProgramScene") {
+          if (msg.d.error) {
+            console.error("Scene switch error:", msg.d.error);
+          } else {
+            console.log("Scene switched successfully");
+          }
+        }
+      };
+
+      socket.onerror = (err) => {
+        console.error("WebSocket error:", err);
+        updateStatus("Connection error - check OBS WebSocket server");
+      };
+
+      socket.onclose = (event) => {
+        console.log("WebSocket closed:", event.code, event.reason);
+        updateStatus("Connection closed");
+      };
+    }
+
+    async function computeAuthResponse(password, salt, challenge) {
+      const enc = new TextEncoder();
+      const base64 = buffer => btoa(String.fromCharCode(...new Uint8Array(buffer)));
+
+      const secretHash = await crypto.subtle.digest("SHA-256", enc.encode(password + salt));
+      const secret = base64(secretHash);
+
+      const authHash = await crypto.subtle.digest("SHA-256", enc.encode(secret + challenge));
+      return base64(authHash);
+    }
+
+    function getSceneList() {
+      const request = {
+        op: 6,
+        d: {
+          requestType: "GetSceneList",
+          requestId: "scene-list-" + Date.now()
+        }
+      };
+      console.log("Requesting scene list:", request);
+      socket.send(JSON.stringify(request));
+    }
+
+    function switchScene(sceneName) {
+      const request = {
+        op: 6,
+        d: {
+          requestType: "SetCurrentProgramScene",
+          requestId: "switch-scene-" + Date.now(),
+          requestData: {
+            sceneName: sceneName
+          }
+        }
+      };
+      console.log("Switching to scene:", sceneName, request);
+      socket.send(JSON.stringify(request));
+    }
+
+    // Start the connection
+    connect();
+  </script>
+</body>
+</html>
