@@ -2,18 +2,202 @@
 <html>
 <head>
   <title>OBS Scene Switcher</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: sans-serif; text-align: center; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      max-width: 90vw;
+      width: 100%;
+      max-width: 800px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      margin-bottom: 30px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
+    }
+
+    #scene-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
     button {
-      font-size: 1.5rem;
-      margin: 10px;
-      padding: 15px 30px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 20px 30px;
+      border-radius: 15px;
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: translateY(-1px);
+    }
+
+    button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    button:hover::before {
+      left: 100%;
+    }
+
+    .status {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 15px;
+      margin: 20px 0;
+      font-size: clamp(1rem, 2.5vw, 1.1rem);
+      color: #666;
+      font-style: italic;
+      border-left: 4px solid #667eea;
+    }
+
+    .status.connecting {
+      border-left-color: #ffa726;
+      color: #f57c00;
+    }
+
+    .status.error {
+      border-left-color: #ef5350;
+      color: #d32f2f;
+    }
+
+    .status.success {
+      border-left-color: #66bb6a;
+      color: #388e3c;
+    }
+
+    .connection-info {
+      background: rgba(102, 126, 234, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 30px 20px;
+        margin: 10px;
+      }
+
+      #scene-buttons {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+      }
+
+      button {
+        padding: 15px 20px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 20px 15px;
+      }
+
+      #scene-buttons {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      button {
+        padding: 18px 25px;
+        font-size: 1.1rem;
+      }
+    }
+
+    /* Loading animation */
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(102, 126, 234, 0.3);
+      border-radius: 50%;
+      border-top-color: #667eea;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Scene button states */
+    .scene-button {
+      position: relative;
+    }
+
+    .scene-button.active {
+      background: linear-gradient(135deg, #66bb6a, #43a047);
+      box-shadow: 0 8px 25px rgba(102, 187, 106, 0.3);
+    }
+
+    .scene-button.active:hover {
+      box-shadow: 0 15px 35px rgba(102, 187, 106, 0.4);
     }
   </style>
 </head>
 <body>
-  <h1>OBS Scene Switcher</h1>
-  <div id="scene-buttons">Connecting...</div>
+  <div class="container">
+    <h1>🎬 OBS Scene Switcher</h1>
+    <div id="scene-buttons">
+      <div class="status connecting">
+        <span class="loading"></span>
+        Connecting to OBS...
+      </div>
+    </div>
+  </div>
 
   <script>
     // CONFIGURATION - Update these values for your setup
@@ -24,23 +208,27 @@
     function createSceneButton(sceneName) {
       const btn = document.createElement("button");
       btn.textContent = sceneName;
+      btn.className = "scene-button";
       btn.onclick = () => switchScene(sceneName);
       return btn;
     }
 
-    function updateStatus(message) {
+    function updateStatus(message, type = "connecting") {
       const container = document.getElementById("scene-buttons");
-      container.innerHTML = `<div style="color: #666; font-style: italic;">${message}</div>`;
+      const statusClass = type === "error" ? "error" : type === "success" ? "success" : "connecting";
+      const loadingIcon = type === "connecting" ? '<span class="loading"></span>' : '';
+      
+      container.innerHTML = `<div class="status ${statusClass}">${loadingIcon}${message}</div>`;
       console.log("Status:", message);
     }
 
     async function connect() {
-      updateStatus("Connecting to OBS...");
+      updateStatus("Connecting to OBS...", "connecting");
       socket = new WebSocket(`ws://${obsIP}:4455`);
 
       socket.onopen = () => {
         console.log("WebSocket opened");
-        updateStatus("Connected! Authenticating...");
+        updateStatus("Connected! Authenticating...", "connecting");
       };
 
       socket.onmessage = async (event) => {
@@ -68,7 +256,7 @@
         // Handle identified
         if (msg.op === 2) {
           console.log("Successfully identified!");
-          updateStatus("Authenticated! Fetching scenes...");
+          updateStatus("Authenticated! Fetching scenes...", "connecting");
           getSceneList();
         }
 
@@ -85,7 +273,7 @@
             console.log("Loaded", scenes.length, "scenes");
           } else {
             console.error("No scenes in response:", msg.d);
-            updateStatus("No scenes found in response");
+            updateStatus("No scenes found in response", "error");
           }
         }
 
@@ -104,13 +292,13 @@
         // Handle errors
         if (msg.op === 7 && msg.d.error) {
           console.error("Request error:", msg.d);
-          updateStatus(`Error: ${msg.d.error}`);
+          updateStatus(`Error: ${msg.d.error}`, "error");
         }
 
         // Handle authentication failure
         if (msg.op === 7 && msg.d.error && msg.d.error.includes("authentication")) {
           console.error("Authentication failed:", msg.d.error);
-          updateStatus("Authentication failed - check password");
+          updateStatus("Authentication failed - check password", "error");
         }
 
         // Handle scene switch response
@@ -125,12 +313,12 @@
 
       socket.onerror = (err) => {
         console.error("WebSocket error:", err);
-        updateStatus("Connection error - check OBS WebSocket server");
+        updateStatus("Connection error - check OBS WebSocket server", "error");
       };
 
       socket.onclose = (event) => {
         console.log("WebSocket closed:", event.code, event.reason);
-        updateStatus("Connection closed");
+        updateStatus("Connection closed", "error");
       };
     }
 
