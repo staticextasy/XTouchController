@@ -145,6 +145,20 @@ async function getAudioSources() {
       requestId: "audio-sources-" + Date.now()
     }
   };
+  console.log("Requesting input list for audio sources...");
+  socket.send(JSON.stringify(request));
+}
+
+// Debug function to get all inputs
+async function getAllInputs() {
+  const request = {
+    op: 6,
+    d: {
+      requestType: "GetInputList",
+      requestId: "all-inputs-" + Date.now()
+    }
+  };
+  console.log("Requesting all inputs for debugging...");
   socket.send(JSON.stringify(request));
 }
 
@@ -304,17 +318,51 @@ function handleObsMessage(msg) {
     btn.querySelector('.btn-text').textContent = isActive ? 'Stop Replay' : 'Start Replay';
   }
 
-  // Handle audio sources
-  if (msg.op === 7 && msg.d.requestType === "GetInputList") {
+  // Handle all inputs (debug)
+  if (msg.op === 7 && msg.d.requestType === "GetInputList" && msg.d.requestId?.includes("all-inputs")) {
     const inputs = msg.d.responseData?.inputs || [];
-    audioSources = inputs.filter(input => input.inputKind.includes('audio'));
+    console.log("=== ALL INPUTS DEBUG ===");
+    inputs.forEach(input => {
+      console.log(`Input: ${input.inputName} | Kind: ${input.inputKind} | Muted: ${input.inputMuted} | Volume: ${input.inputVolumeMul}`);
+    });
+    console.log("=== END DEBUG ===");
+  }
+
+  // Handle audio sources
+  if (msg.op === 7 && msg.d.requestType === "GetInputList" && !msg.d.requestId?.includes("all-inputs")) {
+    const inputs = msg.d.responseData?.inputs || [];
+    console.log("All inputs received:", inputs);
+    
+    // More comprehensive audio source filtering
+    audioSources = inputs.filter(input => {
+      const inputKind = input.inputKind.toLowerCase();
+      return inputKind.includes('audio') || 
+             inputKind.includes('wasapi') || 
+             inputKind.includes('coreaudio') || 
+             inputKind.includes('pulse') || 
+             inputKind.includes('alsa') ||
+             inputKind.includes('dshow') ||
+             inputKind.includes('avfoundation') ||
+             inputKind.includes('decklink') ||
+             inputKind.includes('ndi') ||
+             inputKind.includes('rtmp') ||
+             inputKind.includes('ffmpeg');
+    });
+    
+    console.log("Filtered audio sources:", audioSources);
     
     const audioContainer = document.getElementById('audio-sources');
     audioContainer.innerHTML = '';
     
-            if (audioSources.length === 0) {
-          audioContainer.innerHTML = '<div class="alert alert-warning">No audio sources found</div>';
-        } else {
+    if (audioSources.length === 0) {
+      audioContainer.innerHTML = `
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle"></i>
+          No audio sources found. Make sure you have audio inputs configured in OBS.
+          <br><small class="text-muted">Total inputs found: ${inputs.length}</small>
+        </div>
+      `;
+    } else {
       audioSources.forEach(source => {
         audioContainer.appendChild(createAudioSourceElement(source));
       });
@@ -391,6 +439,7 @@ async function connect() {
       // Load all data
       getSceneList();
       getAudioSources();
+      getAllInputs(); // Debug: get all inputs
       getStreamStatus();
       getRecordStatus();
       getReplayBufferStatus();
