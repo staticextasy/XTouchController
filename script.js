@@ -162,7 +162,24 @@ async function getAllInputs() {
   socket.send(JSON.stringify(request));
 }
 
+// Function to get specific input properties
+async function getInputProperties(inputName) {
+  const request = {
+    op: 6,
+    d: {
+      requestType: "GetInputProperties",
+      requestId: "input-props-" + Date.now(),
+      requestData: {
+        inputName: inputName
+      }
+    }
+  };
+  console.log(`Getting properties for: ${inputName}`);
+  socket.send(JSON.stringify(request));
+}
+
 async function toggleAudioMute(inputName) {
+  console.log(`Toggling mute for: ${inputName}`);
   const request = {
     op: 6,
     d: {
@@ -173,10 +190,12 @@ async function toggleAudioMute(inputName) {
       }
     }
   };
+  console.log("Sending mute toggle request:", request);
   socket.send(JSON.stringify(request));
 }
 
 async function setAudioVolume(inputName, volume) {
+  console.log(`Setting volume for ${inputName} to ${volume}%`);
   const request = {
     op: 6,
     d: {
@@ -188,6 +207,7 @@ async function setAudioVolume(inputName, volume) {
       }
     }
   };
+  console.log("Sending volume set request:", request);
   socket.send(JSON.stringify(request));
 }
 
@@ -273,6 +293,10 @@ function updateFPSStatus(fps) {
 function createAudioSourceElement(source) {
   const audioDiv = document.createElement('div');
   audioDiv.className = 'audio-source d-flex align-items-center justify-content-between';
+  
+  // Escape special characters in input name for safe HTML
+  const safeInputName = source.inputName.replace(/'/g, "\\'").replace(/"/g, '\\"');
+  
   audioDiv.innerHTML = `
     <div class="audio-info d-flex align-items-center">
       <span class="audio-name me-3">${source.inputName}</span>
@@ -282,12 +306,12 @@ function createAudioSourceElement(source) {
     </div>
     <div class="audio-controls d-flex align-items-center">
       <button class="btn btn-sm audio-btn mute-btn ${source.inputMuted ? 'muted' : ''}" 
-              onclick="toggleAudioMute('${source.inputName}')">
+              onclick="toggleAudioMute('${safeInputName}')">
         ${source.inputMuted ? 'Unmute' : 'Mute'}
       </button>
       <input type="range" class="volume-slider ms-2" min="0" max="100" 
              value="${source.inputVolumeMul * 100}"
-             onchange="setAudioVolume('${source.inputName}', this.value)">
+             onchange="setAudioVolume('${safeInputName}', this.value)">
     </div>
   `;
   return audioDiv;
@@ -393,6 +417,29 @@ function handleObsMessage(msg) {
   if (msg.op === 7 && (msg.d.requestType === "StartReplayBuffer" || msg.d.requestType === "StopReplayBuffer")) {
     if (!msg.d.error) {
       getReplayBufferStatus(); // Refresh status
+    }
+  }
+
+  // Handle audio control responses
+  if (msg.op === 7 && msg.d.requestType === "ToggleInputMute") {
+    console.log("Mute toggle response:", msg.d);
+    if (!msg.d.error) {
+      console.log("Mute toggle successful");
+      // Refresh audio sources to update UI
+      getAudioSources();
+    } else {
+      console.error("Mute toggle failed:", msg.d.error);
+    }
+  }
+
+  if (msg.op === 7 && msg.d.requestType === "SetInputVolume") {
+    console.log("Volume set response:", msg.d);
+    if (!msg.d.error) {
+      console.log("Volume set successful");
+      // Refresh audio sources to update UI
+      getAudioSources();
+    } else {
+      console.error("Volume set failed:", msg.d.error);
     }
   }
 }
