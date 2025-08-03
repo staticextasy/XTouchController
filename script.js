@@ -611,6 +611,7 @@ function handleObsMessage(msg) {
     if (!msg.d.error) {
       console.log("✅ Mute toggle successful");
       // Update the specific button text without full refresh
+      console.log("🔄 Triggering audio source UI update after mute toggle");
       updateAudioSourceUI();
     } else {
       console.error("❌ Mute toggle failed:", msg.d.error);
@@ -878,6 +879,7 @@ async function loadVersionInfo() {
 
 // Function to update audio source UI without full refresh
 async function updateAudioSourceUI() {
+  console.log("🔄 updateAudioSourceUI called - requesting input list for UI update");
   // Get current audio sources to update button states
   const request = {
     op: 6,
@@ -900,17 +902,20 @@ function updateExistingAudioControls(audioSources) {
       muteBtn.textContent = source.inputMuted ? 'Unmute' : 'Mute';
       muteBtn.className = `btn btn-sm audio-btn mute-btn ${source.inputMuted ? 'muted' : ''}`;
       
-             // Update mute status indicator
-       const muteStatus = muteBtn.parentElement.querySelector('.mute-status');
-       if (muteStatus) {
-         const muteStatusText = muteStatus.querySelector('.mute-status-text');
-         if (muteStatusText) {
-           // Handle undefined inputMuted
-           const isMuted = source.inputMuted === true;
-           muteStatusText.textContent = isMuted ? 'MUTED' : 'LIVE';
-         }
-         muteStatus.className = `mute-status me-2 ${source.inputMuted === true ? 'muted' : 'unmuted'}`;
-       }
+                   // Update mute status indicator
+      const muteStatus = muteBtn.parentElement.querySelector('.mute-status');
+      if (muteStatus) {
+        const muteStatusText = muteStatus.querySelector('.mute-status-text');
+        if (muteStatusText) {
+          // Handle undefined inputMuted
+          const isMuted = source.inputMuted === true;
+          muteStatusText.textContent = isMuted ? 'MUTED' : 'LIVE';
+          console.log(`🔇 Updated mute status for ${source.inputName}: ${isMuted ? 'MUTED' : 'LIVE'}`);
+        }
+        muteStatus.className = `mute-status me-2 ${source.inputMuted === true ? 'muted' : 'unmuted'}`;
+      } else {
+        console.warn(`⚠️ Could not find mute status indicator for ${source.inputName}`);
+      }
       
              // Update volume slider value (but don't trigger change event)
        const volumeSlider = muteBtn.parentElement.querySelector('.volume-slider');
