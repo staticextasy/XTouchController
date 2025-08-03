@@ -539,10 +539,16 @@ function handleObsMessage(msg) {
     
     console.log("Filtered audio sources:", audioSources);
     
-    const audioContainer = document.getElementById('audio-sources');
-    
-    // Check if this is a UI update request (not initial load)
+    // If this is a UI update request and we have audio sources, get their properties
     const isUIUpdate = msg.d.requestId?.includes("update-ui");
+    if (isUIUpdate && audioSources.length > 0) {
+      console.log("🔄 UI update requested - getting audio source properties");
+      audioSources.forEach(source => {
+        getInputProperties(source.inputName);
+      });
+    }
+    
+    const audioContainer = document.getElementById('audio-sources');
     
     if (audioSources.length === 0) {
       audioContainer.innerHTML = `
@@ -626,6 +632,47 @@ function handleObsMessage(msg) {
       // The slider will stay where the user set it
     } else {
       console.error("❌ Volume set failed:", msg.d.error);
+    }
+  }
+
+  // Handle input properties response (for mute status updates)
+  if (msg.op === 7 && msg.d.requestType === "GetInputProperties") {
+    console.log("Input properties response:", msg.d);
+    if (!msg.d.error && msg.d.responseData) {
+      const inputName = msg.d.responseData.inputName;
+      const properties = msg.d.responseData.inputProperties;
+      
+      // Look for mute and volume properties
+      const muteProperty = properties.find(prop => prop.propertyName === 'input_muted');
+      const volumeProperty = properties.find(prop => prop.propertyName === 'input_volume');
+      
+      if (muteProperty || volumeProperty) {
+        console.log(`🔧 Updating properties for ${inputName}:`, {
+          muted: muteProperty?.propertyValue,
+          volume: volumeProperty?.propertyValue
+        });
+        
+        // Update the specific audio source
+        const muteBtn = document.querySelector(`.mute-btn[data-input-name="${inputName}"]`);
+        if (muteBtn && muteProperty) {
+          const isMuted = muteProperty.propertyValue === true;
+          
+          // Update button text and class
+          muteBtn.textContent = isMuted ? 'Unmute' : 'Mute';
+          muteBtn.className = `btn btn-sm audio-btn mute-btn ${isMuted ? 'muted' : ''}`;
+          
+          // Update mute status indicator
+          const muteStatus = muteBtn.parentElement.querySelector('.mute-status');
+          if (muteStatus) {
+            const muteStatusText = muteStatus.querySelector('.mute-status-text');
+            if (muteStatusText) {
+              muteStatusText.textContent = isMuted ? 'MUTED' : 'LIVE';
+              console.log(`🔇 Updated mute status for ${inputName}: ${isMuted ? 'MUTED' : 'LIVE'}`);
+            }
+            muteStatus.className = `mute-status me-2 ${isMuted ? 'muted' : 'unmuted'}`;
+          }
+        }
+      }
     }
   }
 
