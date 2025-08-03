@@ -583,4 +583,39 @@ h1 {
 
 [data-theme="darkmode"] .version-info a:hover {
   color: #8b5cf6;
+}
+
+/* Footer styling */
+footer {
+  background: var(--card-bg);
+  border-top: 1px solid var(--border-color);
+  margin-top: auto;
+}
+
+footer p {
+  color: var(--text-color);
+  opacity: 0.8;
+}
+
+footer .btn {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  transition: all 0.3s ease;
+}
+
+footer .btn:hover {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+/* Dark mode footer overrides */
+[data-theme="darkmode"] footer {
+  background: rgba(17, 24, 39, 0.95);
+  border-top-color: #374151;
+}
+
+[data-theme="darkmode"] footer p {
+  color: #f3f4f6;
+  opacity: 0.8;
 } 
