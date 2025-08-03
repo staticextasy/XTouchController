@@ -575,12 +575,19 @@ async function connect() {
         testObsConnection();
       }, 1000);
       
-      // Set up periodic updates
-      setInterval(() => {
-        if (socket.readyState === WebSocket.OPEN) {
-          getStats();
-        }
-      }, 2000); // Update stats every 2 seconds
+             // Set up periodic updates
+       setInterval(() => {
+         if (socket.readyState === WebSocket.OPEN) {
+           getStats();
+         }
+       }, 2000); // Update stats every 2 seconds
+       
+       // Set up periodic audio source updates to sync with OBS
+       setInterval(() => {
+         if (socket.readyState === WebSocket.OPEN) {
+           updateAudioSourceUI();
+         }
+       }, 3000); // Update audio sources every 3 seconds
     }
 
     // Handle all other messages
@@ -699,12 +706,13 @@ function updateExistingAudioControls(audioSources) {
       // Update volume slider value (but don't trigger change event)
       const volumeSlider = muteBtn.parentElement.querySelector('.volume-slider');
       if (volumeSlider) {
-        const currentValue = volumeSlider.value;
+        const currentValue = parseFloat(volumeSlider.value);
         const newValue = source.inputVolumeMul * 100;
         
-        // Only update if the difference is significant (more than 1%)
-        if (Math.abs(currentValue - newValue) > 1) {
+        // Update if there's any difference (more sensitive)
+        if (Math.abs(currentValue - newValue) > 0.5) {
           volumeSlider.value = newValue;
+          console.log(`Updated slider for ${source.inputName}: ${currentValue} -> ${newValue}`);
         }
       }
       
@@ -717,7 +725,14 @@ function updateExistingAudioControls(audioSources) {
   });
 }
 
+// Function to manually refresh audio sources (for debugging)
+function refreshAudioSources() {
+  console.log("Manually refreshing audio sources...");
+  updateAudioSourceUI();
+}
+
 // Global functions for debugging (accessible from browser console)
 window.testObsConnection = testObsConnection;
 window.getAudioSources = getAudioSources;
-window.getAllInputs = getAllInputs; 
+window.getAllInputs = getAllInputs;
+window.refreshAudioSources = refreshAudioSources; 
