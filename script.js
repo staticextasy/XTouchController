@@ -166,17 +166,25 @@ async function getAllInputs() {
 
 // Function to get input mute status
 async function getInputMute(inputName) {
+  const requestId = "input-mute-" + Date.now();
   const request = {
     op: 6,
     d: {
       requestType: "GetInputMute",
-      requestId: "input-mute-" + Date.now(),
+      requestId: requestId,
       requestData: {
         inputName: inputName
       }
     }
   };
-  console.log(`Getting mute status for: ${inputName}`);
+  console.log(`Getting mute status for: ${inputName} with requestId: ${requestId}`);
+  
+  // Store the input name for this request
+  if (!window.muteRequests) {
+    window.muteRequests = new Map();
+  }
+  window.muteRequests.set(requestId, inputName);
+  
   socket.send(JSON.stringify(request));
 }
 
@@ -665,28 +673,41 @@ function handleObsMessage(msg) {
   if (msg.op === 7 && msg.d.requestType === "GetInputMute") {
     console.log("Input mute status response:", msg.d);
     if (!msg.d.error && msg.d.responseData) {
-      const inputName = msg.d.responseData.inputName;
+      // Get the input name from our stored request mapping
+      const requestId = msg.d.requestId;
+      const inputName = window.muteRequests ? window.muteRequests.get(requestId) : null;
       const inputMuted = msg.d.responseData.inputMuted;
       
-      console.log(`🔧 Updating mute status for ${inputName}: ${inputMuted ? 'MUTED' : 'LIVE'}`);
-      
-      // Update the specific audio source
-      const muteBtn = document.querySelector(`.mute-btn[data-input-name="${inputName}"]`);
-      if (muteBtn) {
-        // Update button text and class
-        muteBtn.textContent = inputMuted ? 'Unmute' : 'Mute';
-        muteBtn.className = `btn btn-sm audio-btn mute-btn ${inputMuted ? 'muted' : ''}`;
+      if (inputName) {
+        console.log(`🔧 Updating mute status for ${inputName}: ${inputMuted ? 'MUTED' : 'LIVE'}`);
         
-        // Update mute status indicator
-        const muteStatus = muteBtn.parentElement.querySelector('.mute-status');
-        if (muteStatus) {
-          const muteStatusText = muteStatus.querySelector('.mute-status-text');
-          if (muteStatusText) {
-            muteStatusText.textContent = inputMuted ? 'MUTED' : 'LIVE';
-            console.log(`🔇 Updated mute status for ${inputName}: ${inputMuted ? 'MUTED' : 'LIVE'}`);
+        // Update the specific audio source
+        const muteBtn = document.querySelector(`.mute-btn[data-input-name="${inputName}"]`);
+        if (muteBtn) {
+          // Update button text and class
+          muteBtn.textContent = inputMuted ? 'Unmute' : 'Mute';
+          muteBtn.className = `btn btn-sm audio-btn mute-btn ${inputMuted ? 'muted' : ''}`;
+          
+          // Update mute status indicator
+          const muteStatus = muteBtn.parentElement.querySelector('.mute-status');
+          if (muteStatus) {
+            const muteStatusText = muteStatus.querySelector('.mute-status-text');
+            if (muteStatusText) {
+              muteStatusText.textContent = inputMuted ? 'MUTED' : 'LIVE';
+              console.log(`🔇 Updated mute status for ${inputName}: ${inputMuted ? 'MUTED' : 'LIVE'}`);
+            }
+            muteStatus.className = `mute-status me-2 ${inputMuted ? 'muted' : 'unmuted'}`;
           }
-          muteStatus.className = `mute-status me-2 ${inputMuted ? 'muted' : 'unmuted'}`;
+        } else {
+          console.error(`❌ Could not find mute button for ${inputName}`);
         }
+        
+        // Clean up the request mapping
+        if (window.muteRequests) {
+          window.muteRequests.delete(requestId);
+        }
+      } else {
+        console.error(`❌ Could not find input name for requestId: ${requestId}`);
       }
     }
   }
