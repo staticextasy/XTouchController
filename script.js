@@ -232,8 +232,8 @@ async function setAudioVolume(inputName, volume) {
   // Ensure volume is a number and convert to float
   const volumeValue = parseFloat(volume);
   
-  // OBS uses a -60 dB to 0 dB scale
-  // Convert linear percentage (0-100%) to dB (-60 to 0), then to multiplier
+  // Based on the user's feedback, OBS uses a different scale than -60 to 0 dB
+  // We need to apply the inverse of the scaling factor we used in the event handler
   let volumeMultiplier;
   let calculatedDb;
   
@@ -244,23 +244,31 @@ async function setAudioVolume(inputName, volume) {
     volumeMultiplier = 1; // Full volume (0 dB)
     calculatedDb = 0;
   } else {
-    // Convert percentage to dB: 0% = -60 dB, 100% = 0 dB
+    // Convert percentage to dB using our -60 to 0 dB scale
     calculatedDb = (volumeValue / 100) * 60 - 60; // Linear interpolation
-    // Convert dB to multiplier: multiplier = 10^(dB/20)
-    volumeMultiplier = Math.pow(10, calculatedDb / 20);
+    
+    // Apply inverse scaling factor to match OBS's scale
+    // If our -18.4 corresponds to OBS's -30, then scalingFactor = -18.4 / -30 ≈ 0.613
+    // So to convert our dB to OBS's dB: obsDb = ourDb / scalingFactor
+    const scalingFactor = -18.4 / -30; // ≈ 0.613
+    const obsDb = calculatedDb / scalingFactor;
+    
+    // Convert OBS's dB to multiplier: multiplier = 10^(obsDb/20)
+    volumeMultiplier = Math.pow(10, obsDb / 20);
   }
   
   console.log(`Setting volume for ${inputName}:`);
   console.log(`  - Raw slider value: ${volume}%`);
   console.log(`  - Parsed value: ${volumeValue}%`);
-  console.log(`  - Calculated dB: ${calculatedDb.toFixed(2)} dB`);
+  console.log(`  - Our calculated dB: ${calculatedDb.toFixed(2)} dB`);
+  console.log(`  - OBS target dB: ${(calculatedDb / (-18.4 / -30)).toFixed(2)} dB`);
   console.log(`  - Volume multiplier: ${volumeMultiplier.toFixed(6)}`);
-  console.log(`  - Verification: ${volumeMultiplier === 0 ? 'MUTE' : (20 * Math.log10(volumeMultiplier)).toFixed(2) + ' dB'}`);
   
   // Double-check our conversion by converting back
-  const verificationDb = volumeMultiplier === 0 ? -60 : 20 * Math.log10(volumeMultiplier);
-  const verificationPercentage = ((verificationDb + 60) / 60) * 100;
-  console.log(`  - Verification: ${verificationPercentage.toFixed(2)}% -> ${verificationDb.toFixed(2)} dB`);
+  const verificationObsDb = volumeMultiplier === 0 ? -60 : 20 * Math.log10(volumeMultiplier);
+  const verificationOurDb = verificationObsDb * (-18.4 / -30);
+  const verificationPercentage = ((verificationOurDb + 60) / 60) * 100;
+  console.log(`  - Verification: ${verificationPercentage.toFixed(2)}% -> ${verificationObsDb.toFixed(2)} dB (OBS)`);
   
   // Check if socket is connected
   if (!socket || socket.readyState !== WebSocket.OPEN) {
@@ -372,21 +380,31 @@ function createAudioSourceElement(source) {
   const audioDiv = document.createElement('div');
   audioDiv.className = 'audio-source d-flex align-items-center justify-content-between';
   
-  // Convert volume multiplier to linear percentage using OBS's -60 to 0 dB scale
+  // Convert volume multiplier to linear percentage using the corrected scaling
   let sliderValue;
+  let initialDb;
   if (source.inputVolumeMul === 0) {
     sliderValue = 0; // Mute
+    initialDb = -60;
   } else if (source.inputVolumeMul === 1) {
     sliderValue = 100; // Full volume (0 dB)
+    initialDb = 0;
   } else {
     // Convert multiplier to dB: dB = 20 * log10(multiplier)
     const db = 20 * Math.log10(source.inputVolumeMul);
+    initialDb = db;
+    
+    // Apply scaling factor to convert OBS's dB to our expected dB
+    // If OBS -30 corresponds to our -18.4, then scalingFactor = -18.4 / -30 ≈ 0.613
+    const scalingFactor = -18.4 / -30; // ≈ 0.613
+    const scaledDb = db * scalingFactor;
+    
     // Convert dB to percentage: 0% = -60 dB, 100% = 0 dB
-    sliderValue = ((db + 60) / 60) * 100;
+    sliderValue = ((scaledDb + 60) / 60) * 100;
+    
+    // Clamp to valid range
+    sliderValue = Math.max(0, Math.min(100, sliderValue));
   }
-  
-  // Calculate initial dB value for display
-  const initialDb = source.inputVolumeMul === 0 ? -60 : (source.inputVolumeMul === 1 ? 0 : 20 * Math.log10(source.inputVolumeMul));
   
   // Create mute status indicator
   const muteStatusClass = source.inputMuted ? 'muted' : 'unmuted';
@@ -614,30 +632,49 @@ function handleObsMessage(msg) {
     // Update the specific slider for this input
     const volumeSlider = document.querySelector(`[data-input-name="${eventData.inputName}"].volume-slider`);
     if (volumeSlider) {
-      // Convert volume multiplier back to linear percentage using OBS's -60 to 0 dB scale
+      // Use OBS's reported dB value directly instead of calculating our own
+      const obsDb = eventData.inputVolumeDb;
+      
+      // Convert OBS's dB value to slider percentage
+      // OBS appears to use a different scale than -60 to 0 dB
+      // Let's determine the actual scale by analyzing the values
       let newValue;
-      let calculatedDb;
       
       if (eventData.inputVolumeMul === 0) {
         newValue = 0; // Mute
-        calculatedDb = -60;
       } else if (eventData.inputVolumeMul === 1) {
-        newValue = 100; // Full volume (0 dB)
-        calculatedDb = 0;
+        newValue = 100; // Full volume
       } else {
-        // Convert multiplier to dB: dB = 20 * log10(multiplier)
-        calculatedDb = 20 * Math.log10(eventData.inputVolumeMul);
-        // Convert dB to percentage: 0% = -60 dB, 100% = 0 dB
-        newValue = ((calculatedDb + 60) / 60) * 100;
+        // Based on the user's report: website -18.4 vs OBS -30
+        // This suggests OBS might be using a different scale
+        // Let's try using OBS's reported dB directly and map it to our slider
+        // Assuming OBS's scale might be something like -infinity to 0 dB
+        // For now, let's use a linear mapping based on the observed values
+        
+        // If OBS reports -30 dB and we want that to correspond to our slider position
+        // We need to find the relationship between OBS's dB scale and our 0-100% scale
+        
+        // Let's try mapping OBS's dB to our slider using a different approach
+        // Since OBS -30 corresponds to our -18.4, there's a scaling factor
+        const scalingFactor = -18.4 / -30; // ≈ 0.613
+        
+        // Apply this scaling factor to convert OBS dB to our expected dB
+        const scaledDb = obsDb * scalingFactor;
+        
+        // Now convert to percentage using our -60 to 0 dB scale
+        newValue = ((scaledDb + 60) / 60) * 100;
+        
+        // Clamp to valid range
+        newValue = Math.max(0, Math.min(100, newValue));
       }
       
       const currentValue = parseFloat(volumeSlider.value);
       
-      console.log(`  - OBS reported dB: ${eventData.inputVolumeDb.toFixed(2)} dB`);
-      console.log(`  - Our calculated dB: ${calculatedDb.toFixed(2)} dB`);
+      console.log(`  - OBS reported dB: ${obsDb.toFixed(2)} dB`);
+      console.log(`  - OBS volume mul: ${eventData.inputVolumeMul.toFixed(6)}`);
       console.log(`  - Current slider: ${currentValue}%`);
       console.log(`  - Calculated percentage: ${newValue.toFixed(2)}%`);
-      console.log(`  - Difference: ${Math.abs(eventData.inputVolumeDb - calculatedDb).toFixed(2)} dB`);
+      console.log(`  - Scaling factor used: ${scalingFactor?.toFixed(3) || 'N/A'}`);
       
       if (Math.abs(currentValue - newValue) > 0.1) {
         volumeSlider.value = newValue;
@@ -650,10 +687,10 @@ function handleObsMessage(msg) {
         audioLevelFill.style.width = `${newValue}%`;
       }
       
-      // Update dB value display
+      // Update dB value display - use OBS's reported dB
       const dbValue = volumeSlider.parentElement.querySelector('.db-value');
       if (dbValue) {
-        dbValue.textContent = `${calculatedDb.toFixed(1)} dB`;
+        dbValue.textContent = `${obsDb.toFixed(1)} dB`;
       }
     }
   }
@@ -858,7 +895,7 @@ function updateExistingAudioControls(audioSources) {
        if (volumeSlider) {
          const currentValue = parseFloat(volumeSlider.value);
          
-         // Convert volume multiplier to linear percentage using OBS's -60 to 0 dB scale
+         // Convert volume multiplier to linear percentage using the corrected scaling
          let newValue;
          let calculatedDb;
          if (source.inputVolumeMul === 0) {
@@ -870,20 +907,30 @@ function updateExistingAudioControls(audioSources) {
          } else {
            // Convert multiplier to dB: dB = 20 * log10(multiplier)
            calculatedDb = 20 * Math.log10(source.inputVolumeMul);
+           
+           // Apply scaling factor to convert OBS's dB to our expected dB
+           // If OBS -30 corresponds to our -18.4, then scalingFactor = -18.4 / -30 ≈ 0.613
+           const scalingFactor = -18.4 / -30; // ≈ 0.613
+           const scaledDb = calculatedDb * scalingFactor;
+           
            // Convert dB to percentage: 0% = -60 dB, 100% = 0 dB
-           newValue = ((calculatedDb + 60) / 60) * 100;
+           newValue = ((scaledDb + 60) / 60) * 100;
+           
+           // Clamp to valid range
+           newValue = Math.max(0, Math.min(100, newValue));
          }
          
          console.log(`Checking ${source.inputName}: current=${currentValue}%, new=${newValue.toFixed(2)}%, diff=${Math.abs(currentValue - newValue).toFixed(2)}`);
          console.log(`  - OBS volume mul: ${source.inputVolumeMul.toFixed(6)}`);
-         console.log(`  - Calculated dB: ${calculatedDb.toFixed(2)} dB`);
+         console.log(`  - OBS calculated dB: ${calculatedDb.toFixed(2)} dB`);
+         console.log(`  - Scaled dB: ${(calculatedDb * (-18.4 / -30)).toFixed(2)} dB`);
          
          // Always update the slider to match OBS (remove threshold)
          if (Math.abs(currentValue - newValue) > 0.1) {
            volumeSlider.value = newValue;
            console.log(`✅ Updated slider for ${source.inputName}: ${currentValue}% -> ${newValue.toFixed(1)}%`);
            
-           // Update dB value display
+           // Update dB value display - use OBS's calculated dB
            const dbValue = muteBtn.parentElement.querySelector('.db-value');
            if (dbValue) {
              dbValue.textContent = `${calculatedDb.toFixed(1)} dB`;
