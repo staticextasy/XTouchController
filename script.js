@@ -896,13 +896,14 @@ function updateExistingAudioControls(audioSources) {
   console.log("Updating existing audio controls with:", audioSources);
   
   audioSources.forEach(source => {
-    const muteBtn = document.querySelector(`[data-input-name="${source.inputName}"]`);
+    const muteBtn = document.querySelector(`.mute-btn[data-input-name="${source.inputName}"]`);
     if (muteBtn) {
       // Update button text and class
       muteBtn.textContent = source.inputMuted ? 'Unmute' : 'Mute';
       muteBtn.className = `btn btn-sm audio-btn mute-btn ${source.inputMuted ? 'muted' : ''}`;
       
                    // Update mute status indicator
+      // The mute status is a sibling of the mute button within .audio-controls
       const muteStatus = muteBtn.parentElement.querySelector('.mute-status');
       if (muteStatus) {
         const muteStatusText = muteStatus.querySelector('.mute-status-text');
@@ -914,7 +915,7 @@ function updateExistingAudioControls(audioSources) {
         }
         muteStatus.className = `mute-status me-2 ${source.inputMuted === true ? 'muted' : 'unmuted'}`;
       } else {
-        console.warn(`⚠️ Could not find mute status indicator for ${source.inputName}`);
+        console.error(`❌ Could not find mute status indicator for ${source.inputName}`);
       }
       
              // Update volume slider value (but don't trigger change event)
