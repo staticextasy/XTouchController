@@ -376,6 +376,9 @@ function createAudioSourceElement(source) {
     sliderValue = ((db + 60) / 60) * 100;
   }
   
+  // Calculate initial dB value for display
+  const initialDb = source.inputVolumeMul === 0 ? -60 : (source.inputVolumeMul === 1 ? 0 : 20 * Math.log10(source.inputVolumeMul));
+  
   audioDiv.innerHTML = `
     <div class="audio-info d-flex align-items-center">
       <span class="audio-name me-3">${source.inputName}</span>
@@ -383,7 +386,7 @@ function createAudioSourceElement(source) {
         <div class="audio-level-fill" style="width: ${sliderValue}%"></div>
       </div>
     </div>
-    <div class="audio-controls d-flex align-items-center">
+    <div class="audio-controls d-flex align-items-center position-relative">
       <button class="btn btn-sm audio-btn mute-btn ${source.inputMuted ? 'muted' : ''}" 
               data-input-name="${source.inputName}">
         ${source.inputMuted ? 'Unmute' : 'Mute'}
@@ -391,12 +394,14 @@ function createAudioSourceElement(source) {
       <input type="range" class="volume-slider ms-2" min="0" max="100" 
              value="${sliderValue}"
              data-input-name="${source.inputName}">
+      <div class="db-value" data-input-name="${source.inputName}">${initialDb.toFixed(1)} dB</div>
     </div>
   `;
   
   // Add event listeners instead of inline handlers
   const muteBtn = audioDiv.querySelector('.mute-btn');
   const volumeSlider = audioDiv.querySelector('.volume-slider');
+  const dbValue = audioDiv.querySelector('.db-value');
   
   muteBtn.addEventListener('click', () => {
     toggleAudioMute(source.inputName);
@@ -407,6 +412,29 @@ function createAudioSourceElement(source) {
     console.log(`  - Event target value: ${e.target.value}`);
     console.log(`  - Event target type: ${typeof e.target.value}`);
     setAudioVolume(source.inputName, e.target.value);
+  });
+  
+  // Add dB value display on slider interaction
+  volumeSlider.addEventListener('input', (e) => {
+    const volumeValue = parseFloat(e.target.value);
+    // Convert linear percentage to dB: 0% = -60 dB, 100% = 0 dB
+    const db = (volumeValue / 100) * 60 - 60;
+    dbValue.textContent = `${db.toFixed(1)} dB`;
+    dbValue.classList.add('show');
+  });
+  
+  volumeSlider.addEventListener('mousedown', () => {
+    dbValue.classList.add('show');
+  });
+  
+  volumeSlider.addEventListener('mouseup', () => {
+    setTimeout(() => {
+      dbValue.classList.remove('show');
+    }, 1000);
+  });
+  
+  volumeSlider.addEventListener('mouseleave', () => {
+    dbValue.classList.remove('show');
   });
   
   return audioDiv;
@@ -810,6 +838,13 @@ function updateExistingAudioControls(audioSources) {
          if (Math.abs(currentValue - newValue) > 0.1) {
            volumeSlider.value = newValue;
            console.log(`✅ Updated slider for ${source.inputName}: ${currentValue}% -> ${newValue.toFixed(1)}%`);
+           
+           // Update dB value display
+           const dbValue = muteBtn.parentElement.querySelector('.db-value');
+           if (dbValue) {
+             const db = source.inputVolumeMul === 0 ? -60 : (source.inputVolumeMul === 1 ? 0 : 20 * Math.log10(source.inputVolumeMul));
+             dbValue.textContent = `${db.toFixed(1)} dB`;
+           }
          }
        }
       

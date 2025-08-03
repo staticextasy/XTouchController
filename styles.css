@@ -378,7 +378,7 @@ h1 {
 }
 
 .volume-slider {
-  width: 120px;
+  width: 250px; /* Increased from 120px */
   height: 8px;
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.1);
@@ -405,6 +405,28 @@ h1 {
   cursor: pointer;
   border: none;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* dB Value Display */
+.db-value {
+  position: absolute;
+  background: var(--card-bg);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  z-index: 1000;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.db-value.show {
+  opacity: 1;
 }
 
 /* Alerts */

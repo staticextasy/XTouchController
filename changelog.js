@@ -1,5 +1,5 @@
 // Changelog functionality
-let currentVersion = '1.0.0';
+let currentVersion = '1.1.0';
 
 // Initialize changelog when page loads
 document.addEventListener('DOMContentLoaded', function() {

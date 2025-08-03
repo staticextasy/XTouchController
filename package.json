@@ -1,6 +1,6 @@
 {
   "name": "xtouch-controller",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A comprehensive web-based controller for OBS Studio with scene switching, stream/record controls, audio management, and real-time monitoring via WebSocket connection.",
   "main": "server.js",
   "scripts": {
