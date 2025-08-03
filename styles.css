@@ -61,43 +61,60 @@
   --primary-color: #6366f1;
   --secondary-color: #8b5cf6;
   --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  --text-color: #e5e7eb;
-  --bg-color: #111827;
-  --card-bg: rgba(31, 41, 55, 0.95);
-  --border-color: #6366f1;
-  --shadow-color: rgba(99, 102, 241, 0.3);
+  --text-color: #f3f4f6;
+  --bg-color: #000000;
+  --card-bg: rgba(17, 24, 39, 0.95);
+  --border-color: #374151;
+  --shadow-color: rgba(0, 0, 0, 0.5);
 }
 
 /* Dark mode specific overrides */
 [data-theme="darkmode"] .card {
-  background: rgba(31, 41, 55, 0.95);
-  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(17, 24, 39, 0.95);
+  border-color: #374151;
 }
 
 [data-theme="darkmode"] .card-header {
-  background: rgba(17, 24, 39, 0.8);
-  border-bottom-color: rgba(99, 102, 241, 0.3);
+  background: rgba(3, 7, 18, 0.9);
+  border-bottom-color: #374151;
 }
 
 [data-theme="darkmode"] .status-card {
-  background: rgba(31, 41, 55, 0.95);
-  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(17, 24, 39, 0.95);
+  border-color: #374151;
 }
 
 [data-theme="darkmode"] .status-value {
-  background: rgba(99, 102, 241, 0.2);
-  color: #e5e7eb;
+  background: rgba(55, 65, 81, 0.8);
+  color: #f3f4f6;
 }
 
 [data-theme="darkmode"] .audio-source {
-  background: rgba(31, 41, 55, 0.95);
-  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(17, 24, 39, 0.95);
+  border-color: #374151;
 }
 
 [data-theme="darkmode"] .alert {
-  background: rgba(31, 41, 55, 0.95);
-  border-color: rgba(99, 102, 241, 0.3);
-  color: #e5e7eb;
+  background: rgba(17, 24, 39, 0.95);
+  border-color: #374151;
+  color: #f3f4f6;
+}
+
+[data-theme="darkmode"] .main-container {
+  background: rgba(17, 24, 39, 0.95);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="darkmode"] .text-muted {
+  color: #9ca3af !important;
+}
+
+[data-theme="darkmode"] .audio-level {
+  background: rgba(55, 65, 81, 0.8);
+}
+
+[data-theme="darkmode"] .volume-slider {
+  background: rgba(55, 65, 81, 0.8);
 }
 
 /* Global Styles */
