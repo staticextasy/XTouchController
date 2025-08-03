@@ -231,11 +231,26 @@ async function toggleAudioMute(inputName) {
 async function setAudioVolume(inputName, volume) {
   // Ensure volume is a number and convert to float
   const volumeValue = parseFloat(volume);
-  const volumeMultiplier = volumeValue / 100;
+  
+  // Convert linear percentage to logarithmic volume multiplier
+  // OBS uses a logarithmic scale where 0% = -60dB and 100% = 0dB
+  let volumeMultiplier;
+  if (volumeValue === 0) {
+    volumeMultiplier = 0; // Mute
+  } else if (volumeValue === 100) {
+    volumeMultiplier = 1; // Full volume
+  } else {
+    // Convert percentage to dB, then to multiplier
+    // Formula: dB = 20 * log10(percentage/100)
+    // Then convert dB to multiplier: multiplier = 10^(dB/20)
+    const db = 20 * Math.log10(volumeValue / 100);
+    volumeMultiplier = Math.pow(10, db / 20);
+  }
   
   console.log(`Setting volume for ${inputName}:`);
-  console.log(`  - Raw slider value: ${volume}`);
-  console.log(`  - Parsed value: ${volumeValue}`);
+  console.log(`  - Raw slider value: ${volume}%`);
+  console.log(`  - Parsed value: ${volumeValue}%`);
+  console.log(`  - Calculated dB: ${20 * Math.log10(volumeValue / 100)}`);
   console.log(`  - Volume multiplier: ${volumeMultiplier}`);
   console.log(`  - Expected percentage: ${(volumeMultiplier * 100).toFixed(1)}%`);
   
@@ -543,15 +558,28 @@ function handleObsMessage(msg) {
     // Update the specific slider for this input
     const volumeSlider = document.querySelector(`[data-input-name="${eventData.inputName}"].volume-slider`);
     if (volumeSlider) {
-      const newValue = eventData.inputVolumeMul * 100;
+      // Convert logarithmic volume multiplier back to linear percentage
+      let newValue;
+      if (eventData.inputVolumeMul === 0) {
+        newValue = 0; // Mute
+      } else if (eventData.inputVolumeMul === 1) {
+        newValue = 100; // Full volume
+      } else {
+        // Convert multiplier to dB, then to percentage
+        // Formula: dB = 20 * log10(multiplier)
+        // Then convert dB to percentage: percentage = 100 * 10^(dB/20)
+        const db = 20 * Math.log10(eventData.inputVolumeMul);
+        newValue = 100 * Math.pow(10, db / 20);
+      }
+      
       const currentValue = parseFloat(volumeSlider.value);
       
       console.log(`  - Current slider: ${currentValue}%`);
-      console.log(`  - New slider: ${newValue}%`);
+      console.log(`  - Calculated percentage: ${newValue.toFixed(1)}%`);
       
       if (Math.abs(currentValue - newValue) > 0.1) {
         volumeSlider.value = newValue;
-        console.log(`✅ Updated slider for ${eventData.inputName}: ${currentValue}% -> ${newValue}%`);
+        console.log(`✅ Updated slider for ${eventData.inputName}: ${currentValue}% -> ${newValue.toFixed(1)}%`);
       }
       
       // Update audio level indicator
@@ -747,20 +775,31 @@ function updateExistingAudioControls(audioSources) {
       muteBtn.textContent = source.inputMuted ? 'Unmute' : 'Mute';
       muteBtn.className = `btn btn-sm audio-btn mute-btn ${source.inputMuted ? 'muted' : ''}`;
       
-      // Update volume slider value (but don't trigger change event)
-      const volumeSlider = muteBtn.parentElement.querySelector('.volume-slider');
-      if (volumeSlider) {
-        const currentValue = parseFloat(volumeSlider.value);
-        const newValue = source.inputVolumeMul * 100;
-        
-        console.log(`Checking ${source.inputName}: current=${currentValue}, new=${newValue}, diff=${Math.abs(currentValue - newValue)}`);
-        
-        // Always update the slider to match OBS (remove threshold)
-        if (Math.abs(currentValue - newValue) > 0.1) {
-          volumeSlider.value = newValue;
-          console.log(`✅ Updated slider for ${source.inputName}: ${currentValue} -> ${newValue}`);
-        }
-      }
+             // Update volume slider value (but don't trigger change event)
+       const volumeSlider = muteBtn.parentElement.querySelector('.volume-slider');
+       if (volumeSlider) {
+         const currentValue = parseFloat(volumeSlider.value);
+         
+         // Convert logarithmic volume multiplier to linear percentage
+         let newValue;
+         if (source.inputVolumeMul === 0) {
+           newValue = 0; // Mute
+         } else if (source.inputVolumeMul === 1) {
+           newValue = 100; // Full volume
+         } else {
+           // Convert multiplier to dB, then to percentage
+           const db = 20 * Math.log10(source.inputVolumeMul);
+           newValue = 100 * Math.pow(10, db / 20);
+         }
+         
+         console.log(`Checking ${source.inputName}: current=${currentValue}%, new=${newValue.toFixed(1)}%, diff=${Math.abs(currentValue - newValue)}`);
+         
+         // Always update the slider to match OBS (remove threshold)
+         if (Math.abs(currentValue - newValue) > 0.1) {
+           volumeSlider.value = newValue;
+           console.log(`✅ Updated slider for ${source.inputName}: ${currentValue}% -> ${newValue.toFixed(1)}%`);
+         }
+       }
       
       // Update audio level indicator
       const audioLevelFill = muteBtn.parentElement.parentElement.querySelector('.audio-level-fill');
