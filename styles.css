@@ -56,6 +56,50 @@
   --shadow-color: rgba(168, 237, 234, 0.2);
 }
 
+/* Dark Mode theme */
+[data-theme="darkmode"] {
+  --primary-color: #6366f1;
+  --secondary-color: #8b5cf6;
+  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --text-color: #e5e7eb;
+  --bg-color: #111827;
+  --card-bg: rgba(31, 41, 55, 0.95);
+  --border-color: #6366f1;
+  --shadow-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Dark mode specific overrides */
+[data-theme="darkmode"] .card {
+  background: rgba(31, 41, 55, 0.95);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+[data-theme="darkmode"] .card-header {
+  background: rgba(17, 24, 39, 0.8);
+  border-bottom-color: rgba(99, 102, 241, 0.3);
+}
+
+[data-theme="darkmode"] .status-card {
+  background: rgba(31, 41, 55, 0.95);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+[data-theme="darkmode"] .status-value {
+  background: rgba(99, 102, 241, 0.2);
+  color: #e5e7eb;
+}
+
+[data-theme="darkmode"] .audio-source {
+  background: rgba(31, 41, 55, 0.95);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+[data-theme="darkmode"] .alert {
+  background: rgba(31, 41, 55, 0.95);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: #e5e7eb;
+}
+
 /* Global Styles */
 body {
   background: var(--primary-gradient);
@@ -118,6 +162,7 @@ h1 {
 .theme-btn[data-theme="forest"] { background: linear-gradient(135deg, #2ecc71, #27ae60) !important; }
 .theme-btn[data-theme="midnight"] { background: linear-gradient(135deg, #2c3e50, #34495e) !important; }
 .theme-btn[data-theme="aurora"] { background: linear-gradient(135deg, #a8edea, #fed6e3) !important; }
+.theme-btn[data-theme="darkmode"] { background: linear-gradient(135deg, #6366f1, #8b5cf6) !important; }
 
 /* Status Cards */
 .status-card {
