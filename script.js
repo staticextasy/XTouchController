@@ -178,8 +178,36 @@ async function getInputProperties(inputName) {
   socket.send(JSON.stringify(request));
 }
 
+// Test function to check if OBS WebSocket is working
+async function testObsConnection() {
+  console.log("Testing OBS WebSocket connection...");
+  
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    console.error("WebSocket not connected for test!");
+    return;
+  }
+  
+  const request = {
+    op: 6,
+    d: {
+      requestType: "GetVersion",
+      requestId: "test-connection-" + Date.now()
+    }
+  };
+  
+  console.log("Sending test request:", request);
+  socket.send(JSON.stringify(request));
+}
+
 async function toggleAudioMute(inputName) {
   console.log(`Toggling mute for: ${inputName}`);
+  
+  // Check if socket is connected
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    console.error("WebSocket not connected!");
+    return;
+  }
+  
   const request = {
     op: 6,
     d: {
@@ -191,11 +219,24 @@ async function toggleAudioMute(inputName) {
     }
   };
   console.log("Sending mute toggle request:", request);
-  socket.send(JSON.stringify(request));
+  
+  try {
+    socket.send(JSON.stringify(request));
+    console.log("Mute toggle request sent successfully");
+  } catch (error) {
+    console.error("Failed to send mute toggle request:", error);
+  }
 }
 
 async function setAudioVolume(inputName, volume) {
   console.log(`Setting volume for ${inputName} to ${volume}%`);
+  
+  // Check if socket is connected
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    console.error("WebSocket not connected!");
+    return;
+  }
+  
   const request = {
     op: 6,
     d: {
@@ -208,7 +249,13 @@ async function setAudioVolume(inputName, volume) {
     }
   };
   console.log("Sending volume set request:", request);
-  socket.send(JSON.stringify(request));
+  
+  try {
+    socket.send(JSON.stringify(request));
+    console.log("Volume set request sent successfully");
+  } catch (error) {
+    console.error("Failed to send volume set request:", error);
+  }
 }
 
 // Status Monitoring Functions
@@ -420,26 +467,38 @@ function handleObsMessage(msg) {
     }
   }
 
+  // Handle test connection response
+  if (msg.op === 7 && msg.d.requestType === "GetVersion") {
+    console.log("OBS Version response:", msg.d);
+    if (!msg.d.error) {
+      console.log("✅ OBS WebSocket connection is working!");
+      console.log("OBS Version:", msg.d.responseData?.obsVersion);
+      console.log("WebSocket Version:", msg.d.responseData?.obsWebSocketVersion);
+    } else {
+      console.error("❌ OBS WebSocket test failed:", msg.d.error);
+    }
+  }
+
   // Handle audio control responses
   if (msg.op === 7 && msg.d.requestType === "ToggleInputMute") {
     console.log("Mute toggle response:", msg.d);
     if (!msg.d.error) {
-      console.log("Mute toggle successful");
+      console.log("✅ Mute toggle successful");
       // Refresh audio sources to update UI
       getAudioSources();
     } else {
-      console.error("Mute toggle failed:", msg.d.error);
+      console.error("❌ Mute toggle failed:", msg.d.error);
     }
   }
 
   if (msg.op === 7 && msg.d.requestType === "SetInputVolume") {
     console.log("Volume set response:", msg.d);
     if (!msg.d.error) {
-      console.log("Volume set successful");
+      console.log("✅ Volume set successful");
       // Refresh audio sources to update UI
       getAudioSources();
     } else {
-      console.error("Volume set failed:", msg.d.error);
+      console.error("❌ Volume set failed:", msg.d.error);
     }
   }
 }
@@ -491,6 +550,11 @@ async function connect() {
       getRecordStatus();
       getReplayBufferStatus();
       getStats();
+      
+      // Test OBS WebSocket connection
+      setTimeout(() => {
+        testObsConnection();
+      }, 1000);
       
       // Set up periodic updates
       setInterval(() => {
@@ -589,4 +653,9 @@ async function loadVersionInfo() {
   } catch (error) {
     console.error('Failed to load version info:', error);
   }
-} 
+}
+
+// Global functions for debugging (accessible from browser console)
+window.testObsConnection = testObsConnection;
+window.getAudioSources = getAudioSources;
+window.getAllInputs = getAllInputs; 
