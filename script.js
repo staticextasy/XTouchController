@@ -582,12 +582,13 @@ async function connect() {
          }
        }, 2000); // Update stats every 2 seconds
        
-       // Set up periodic audio source updates to sync with OBS
-       setInterval(() => {
-         if (socket.readyState === WebSocket.OPEN) {
-           updateAudioSourceUI();
-         }
-       }, 3000); // Update audio sources every 3 seconds
+               // Set up periodic audio source updates to sync with OBS
+        setInterval(() => {
+          if (socket.readyState === WebSocket.OPEN) {
+            console.log("🔄 Periodic audio sync triggered");
+            updateAudioSourceUI();
+          }
+        }, 2000); // Update audio sources every 2 seconds (more frequent)
     }
 
     // Handle all other messages
@@ -696,6 +697,8 @@ async function updateAudioSourceUI() {
 
 // Function to update existing audio controls without recreating them
 function updateExistingAudioControls(audioSources) {
+  console.log("Updating existing audio controls with:", audioSources);
+  
   audioSources.forEach(source => {
     const muteBtn = document.querySelector(`[data-input-name="${source.inputName}"]`);
     if (muteBtn) {
@@ -709,10 +712,12 @@ function updateExistingAudioControls(audioSources) {
         const currentValue = parseFloat(volumeSlider.value);
         const newValue = source.inputVolumeMul * 100;
         
-        // Update if there's any difference (more sensitive)
-        if (Math.abs(currentValue - newValue) > 0.5) {
+        console.log(`Checking ${source.inputName}: current=${currentValue}, new=${newValue}, diff=${Math.abs(currentValue - newValue)}`);
+        
+        // Always update the slider to match OBS (remove threshold)
+        if (Math.abs(currentValue - newValue) > 0.1) {
           volumeSlider.value = newValue;
-          console.log(`Updated slider for ${source.inputName}: ${currentValue} -> ${newValue}`);
+          console.log(`✅ Updated slider for ${source.inputName}: ${currentValue} -> ${newValue}`);
         }
       }
       
@@ -721,18 +726,38 @@ function updateExistingAudioControls(audioSources) {
       if (audioLevelFill) {
         audioLevelFill.style.width = `${source.inputVolumeMul * 100}%`;
       }
+    } else {
+      console.log(`❌ Could not find mute button for: ${source.inputName}`);
     }
   });
 }
 
 // Function to manually refresh audio sources (for debugging)
 function refreshAudioSources() {
-  console.log("Manually refreshing audio sources...");
+  console.log("🔄 Manually refreshing audio sources...");
   updateAudioSourceUI();
+}
+
+// Function to force immediate sync with OBS
+function forceSyncWithOBS() {
+  console.log("🚀 Force syncing with OBS...");
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    const request = {
+      op: 6,
+      d: {
+        requestType: "GetInputList",
+        requestId: "force-sync-" + Date.now()
+      }
+    };
+    socket.send(JSON.stringify(request));
+  } else {
+    console.error("❌ WebSocket not connected!");
+  }
 }
 
 // Global functions for debugging (accessible from browser console)
 window.testObsConnection = testObsConnection;
 window.getAudioSources = getAudioSources;
 window.getAllInputs = getAllInputs;
-window.refreshAudioSources = refreshAudioSources; 
+window.refreshAudioSources = refreshAudioSources;
+window.forceSyncWithOBS = forceSyncWithOBS; 
