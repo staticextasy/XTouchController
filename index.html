@@ -104,10 +104,10 @@
 
     .theme-switcher {
       position: absolute;
-      top: 20px;
-      right: 20px;
+      top: 30px;
+      right: 30px;
       display: flex;
-      gap: 8px;
+      gap: 10px;
       flex-wrap: wrap;
       justify-content: center;
     }
@@ -141,7 +141,7 @@
 
     h1 {
       font-size: clamp(2rem, 5vw, 3rem);
-      margin-bottom: 30px;
+      margin-bottom: 50px;
       background: var(--text-gradient);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -154,7 +154,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 15px;
-      margin-top: 20px;
+      margin-top: 40px;
     }
 
     button {
@@ -242,13 +242,18 @@
         position: relative;
         top: auto;
         right: auto;
-        margin-bottom: 20px;
+        margin-bottom: 30px;
         justify-content: center;
+      }
+
+      h1 {
+        margin-bottom: 40px;
       }
 
       #scene-buttons {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 12px;
+        margin-top: 30px;
       }
 
       button {
@@ -261,9 +266,14 @@
         padding: 20px 15px;
       }
 
+      h1 {
+        margin-bottom: 30px;
+      }
+
       #scene-buttons {
         grid-template-columns: 1fr;
         gap: 10px;
+        margin-top: 25px;
       }
 
       button {
@@ -272,7 +282,8 @@
       }
 
       .theme-switcher {
-        gap: 6px;
+        gap: 8px;
+        margin-bottom: 25px;
       }
 
       .theme-btn {
