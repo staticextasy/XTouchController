@@ -1,6 +1,6 @@
 // CONFIGURATION - Update these values for your setup
-const password = "YOUR_OBS_WEBSOCKET_PASSWORD"; // Replace with your actual password
-const obsIP = "YOUR_OBS_PC_IP_ADDRESS"; // Replace with your OBS PC's IP address
+const password = ""; // Leave empty if no password, or enter your OBS WebSocket password
+const obsIP = "localhost"; // Use "localhost" if OBS is on the same PC, or enter the IP address
 let socket;
 
 // Global state variables
@@ -449,15 +449,23 @@ async function connect() {
 
   socket.onerror = (err) => {
     console.error("WebSocket error:", err);
-    updateStatus("Connection error - check OBS WebSocket server", "error");
+    updateStatus("Connection error - check OBS WebSocket server and settings", "error");
     updateConnectionStatus("Error");
   };
 
   socket.onclose = (event) => {
     console.log("WebSocket closed:", event.code, event.reason);
-    updateStatus("Connection closed", "error");
+    updateStatus("Connection closed - make sure OBS is running and WebSocket server is enabled", "error");
     updateConnectionStatus("Disconnected");
   };
+
+  // Add connection timeout
+  setTimeout(() => {
+    if (socket.readyState !== WebSocket.OPEN) {
+      updateStatus("Connection timeout - check OBS WebSocket settings", "error");
+      updateConnectionStatus("Timeout");
+    }
+  }, 5000); // 5 second timeout
 }
 
 // Initialize the application
