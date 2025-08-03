@@ -2,73 +2,198 @@
 
 A comprehensive web-based controller for OBS Studio with scene switching, stream/record controls, audio management, and real-time monitoring via WebSocket connection.
 
-## Features
+## ✨ Features
 
-- **Scene Management**: Connect to OBS Studio via WebSocket and switch between scenes
-- **Stream & Record Controls**: Start/stop streaming, recording, and replay buffer
-- **Audio Management**: Control volume and mute/unmute individual audio sources
-- **Real-time Monitoring**: Live status updates for connection, stream, recording, and FPS
-- **Responsive Design**: Works on desktop, tablet, and mobile devices
-- **Theme Customization**: Multiple color schemes with persistent settings
-- **Professional UI**: Modern, intuitive interface with smooth animations
+- **🎭 Scene Management** - Switch between OBS scenes with beautiful buttons
+- **📺 Stream & Record Controls** - Start/stop streaming and recording with one click
+- **🎵 Audio Management** - Control audio sources (mute/unmute, volume adjustment)
+- **📊 Real-time Monitoring** - Live status of connection, stream, recording, and FPS
+- **📱 Responsive Design** - Works perfectly on desktop, tablet, and mobile devices
+- **🎨 Theme Customization** - 6 beautiful color themes including dark mode
+- **⚡ Professional UI** - Modern Bootstrap-based interface with smooth animations
+- **🔒 Secure** - Built with security best practices and HTTPS support
 
-## Setup
+## 🚀 Quick Start
 
 ### Prerequisites
 
-1. **OBS Studio** with WebSocket plugin installed
-2. **OBS WebSocket** plugin enabled and configured
+- **Node.js** (version 14 or higher)
+- **OBS Studio** with WebSocket plugin installed
+- **OBS WebSocket** (version 5.0 or higher)
 
-### OBS WebSocket Configuration
+### Installation
 
-1. In OBS Studio, go to **Tools** → **WebSocket Server Settings**
-2. Enable the WebSocket server
-3. Set a password (you'll need this for configuration)
-4. Note the port (default: `4455`)
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/staticextasy/XTouchController.git
+   cd XTouchController
+   ```
 
-### Configuration
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-Edit the configuration in `index.html`:
+3. **Configure OBS WebSocket:**
+   - Open OBS Studio
+   - Go to `Tools` → `WebSocket Server Settings`
+   - Enable WebSocket server
+   - Set a password (remember this for configuration)
+   - Note your OBS PC's IP address
 
-```javascript
-const password = "YOUR_OBS_WEBSOCKET_PASSWORD";  // Your OBS WebSocket password
-const obsIP = "YOUR_OBS_PC_IP_ADDRESS";          // Your OBS PC's IP address
+4. **Configure the application:**
+   - Open `script.js`
+   - Update the configuration variables:
+     ```javascript
+     const password = "YOUR_OBS_WEBSOCKET_PASSWORD"; // Your actual password
+     const obsIP = "YOUR_OBS_PC_IP_ADDRESS"; // Your OBS PC's IP address
+     ```
+
+5. **Start the server:**
+   ```bash
+   # Development mode (with auto-restart)
+   npm run dev
+   
+   # Production mode
+   npm start
+   ```
+
+6. **Access the application:**
+   - Open your browser and go to `http://localhost:3000`
+   - The application will automatically connect to OBS
+
+## 🎮 Usage
+
+### Scene Controls
+- Click any scene button to switch to that scene in OBS
+- Active scenes are highlighted with a green glow
+
+### Stream & Record Controls
+- **📡 Stream Button** - Start/stop streaming
+- **🔴 Record Button** - Start/stop recording
+- **⏪ Replay Buffer** - Save replay buffer
+
+### Audio Controls
+- **Mute/Unmute** - Toggle audio sources on/off
+- **Volume Slider** - Adjust volume levels in real-time
+- **Audio Level Indicator** - Visual feedback of current volume
+
+### Status Monitoring
+- **Connection Status** - Shows connection to OBS
+- **Stream Status** - Current streaming state
+- **Recording Status** - Current recording state
+- **FPS Counter** - Real-time FPS monitoring
+
+### Theme Switching
+- Click the theme buttons in the top-right corner
+- Choose from 6 beautiful themes:
+  - 🌊 Ocean (default)
+  - 🌅 Sunset
+  - 🌲 Forest
+  - 🌙 Midnight
+  - 🌌 Aurora
+  - 🌑 Dark Mode
+
+## 🔧 Configuration
+
+### Environment Variables
+- `PORT` - Server port (default: 3000)
+- `NODE_ENV` - Environment mode (development/production)
+
+### OBS WebSocket Settings
+- **Port**: 4455 (default)
+- **Password**: Set in OBS WebSocket settings
+- **IP Address**: Your OBS PC's local IP address
+
+## 🛠️ Development
+
+### Project Structure
+```
+XTouchController/
+├── index.html          # Main HTML file
+├── styles.css          # Custom CSS styles
+├── script.js           # JavaScript logic
+├── server.js           # Express server
+├── package.json        # Dependencies and scripts
+└── README.md           # Documentation
 ```
 
-### Usage
+### Available Scripts
+- `npm start` - Start production server
+- `npm run dev` - Start development server with auto-restart
+- `npm test` - Run tests (placeholder)
 
-1. Open `index.html` in a web browser
-2. The page will automatically connect to OBS
-3. Once connected, you'll see:
-   - **Status Panel**: Real-time connection, stream, recording, and FPS status
-   - **Stream & Record Controls**: Buttons to start/stop streaming, recording, and replay buffer
-   - **Audio Controls**: Volume sliders and mute buttons for all audio sources
-   - **Scene Controls**: Buttons for all available scenes
-4. Use the theme switcher (top-right) to customize the appearance
-5. All controls are touch-friendly and work on mobile devices
+### API Endpoints
+- `GET /` - Main application
+- `GET /health` - Health check
+- `GET /api/status` - Server status
 
-## Troubleshooting
+## 🔒 Security Features
+
+- **Helmet.js** - Security headers
+- **CORS** - Cross-origin resource sharing
+- **Content Security Policy** - XSS protection
+- **Compression** - Gzip compression for performance
+
+## 🚨 Troubleshooting
 
 ### Connection Issues
+1. **Check OBS WebSocket settings**
+   - Ensure WebSocket server is enabled
+   - Verify password is correct
+   - Check IP address is accessible
 
-- Ensure OBS WebSocket server is enabled
-- Check that the IP address and port are correct
-- Verify the password matches your OBS WebSocket settings
-- Check browser console for detailed error messages
+2. **Network Issues**
+   - Ensure both devices are on the same network
+   - Check firewall settings
+   - Try using localhost if running on same machine
 
-### Scene Loading Issues
+3. **Browser Issues**
+   - Clear browser cache
+   - Try different browser
+   - Check browser console for errors
 
-- Make sure you have scenes created in OBS
-- Check browser console for authentication errors
-- Verify OBS is running and not in Studio Mode
+### Common Errors
+- **"WebSocket connection failed"** - Check OBS WebSocket settings
+- **"Authentication failed"** - Verify password in configuration
+- **"Scenes not loading"** - Check OBS is running and scenes exist
 
-## Development
+## 📱 Mobile Usage
 
-This is a simple HTML/JavaScript application that uses:
-- WebSocket API for real-time communication
-- OBS WebSocket protocol v5
-- SHA-256 authentication
+The application is fully responsive and works great on mobile devices:
+- Touch-friendly buttons
+- Optimized layout for small screens
+- Swipe gestures supported
+- PWA-ready for future enhancements
 
-## License
+## 🔮 Future Features
 
-This project is open source and available under the MIT License. 
+- **User Authentication** - Secure access control
+- **Multiple OBS Instances** - Control multiple OBS setups
+- **Custom Hotkeys** - Programmable keyboard shortcuts
+- **Stream Chat Integration** - Display chat messages
+- **Analytics Dashboard** - View stream statistics
+- **Plugin System** - Extensible functionality
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📞 Support
+
+If you encounter any issues or have questions:
+1. Check the troubleshooting section
+2. Search existing issues
+3. Create a new issue with detailed information
+
+---
+
+**Made with ❤️ for the streaming community** 
