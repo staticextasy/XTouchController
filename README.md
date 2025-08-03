@@ -20,7 +20,7 @@ A simple web-based controller for switching OBS Studio scenes via WebSocket conn
 
 1. In OBS Studio, go to **Tools** → **WebSocket Server Settings**
 2. Enable the WebSocket server
-3. Set a password (default: `ZRuqVAMkCsIDLHrb`)
+3. Set a password (you'll need this for configuration)
 4. Note the port (default: `4455`)
 
 ### Configuration
@@ -28,8 +28,8 @@ A simple web-based controller for switching OBS Studio scenes via WebSocket conn
 Edit the configuration in `index.html`:
 
 ```javascript
-const password = "ZRuqVAMkCsIDLHrb";  // Your OBS WebSocket password
-const obsIP = "10.0.0.217";           // Your OBS PC's IP address
+const password = "YOUR_OBS_WEBSOCKET_PASSWORD";  // Your OBS WebSocket password
+const obsIP = "YOUR_OBS_PC_IP_ADDRESS";          // Your OBS PC's IP address
 ```
 
 ### Usage
