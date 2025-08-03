@@ -341,9 +341,6 @@ function createAudioSourceElement(source) {
   const audioDiv = document.createElement('div');
   audioDiv.className = 'audio-source d-flex align-items-center justify-content-between';
   
-  // Escape special characters in input name for safe HTML
-  const safeInputName = source.inputName.replace(/'/g, "\\'").replace(/"/g, '\\"');
-  
   audioDiv.innerHTML = `
     <div class="audio-info d-flex align-items-center">
       <span class="audio-name me-3">${source.inputName}</span>
@@ -353,14 +350,27 @@ function createAudioSourceElement(source) {
     </div>
     <div class="audio-controls d-flex align-items-center">
       <button class="btn btn-sm audio-btn mute-btn ${source.inputMuted ? 'muted' : ''}" 
-              onclick="toggleAudioMute('${safeInputName}')">
+              data-input-name="${source.inputName}">
         ${source.inputMuted ? 'Unmute' : 'Mute'}
       </button>
       <input type="range" class="volume-slider ms-2" min="0" max="100" 
              value="${source.inputVolumeMul * 100}"
-             onchange="setAudioVolume('${safeInputName}', this.value)">
+             data-input-name="${source.inputName}">
     </div>
   `;
+  
+  // Add event listeners instead of inline handlers
+  const muteBtn = audioDiv.querySelector('.mute-btn');
+  const volumeSlider = audioDiv.querySelector('.volume-slider');
+  
+  muteBtn.addEventListener('click', () => {
+    toggleAudioMute(source.inputName);
+  });
+  
+  volumeSlider.addEventListener('change', (e) => {
+    setAudioVolume(source.inputName, e.target.value);
+  });
+  
   return audioDiv;
 }
 
