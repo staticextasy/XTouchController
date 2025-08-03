@@ -38,6 +38,10 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+app.get('/changelog', (req, res) => {
+  res.sendFile(path.join(__dirname, 'changelog.html'));
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 

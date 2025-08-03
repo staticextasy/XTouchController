@@ -462,7 +462,27 @@ async function connect() {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
+  // Load version information
+  loadVersionInfo();
+  
   // Start the connection
   connect();
   initThemeSwitcher(); // Initialize theme switcher
-}); 
+});
+
+// Load version information from package.json
+async function loadVersionInfo() {
+  try {
+    const response = await fetch('/api/status');
+    const data = await response.json();
+    
+    if (data.version) {
+      const versionElement = document.getElementById('app-version');
+      if (versionElement) {
+        versionElement.textContent = data.version;
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load version info:', error);
+  }
+} 

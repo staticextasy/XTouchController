@@ -505,4 +505,82 @@ h1 {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary-color);
+}
+
+/* Changelog Styles */
+.release-item {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding-bottom: 1rem;
+}
+
+.release-item:last-child {
+  border-bottom: none;
+}
+
+.release-body {
+  line-height: 1.6;
+}
+
+.release-body h3, .release-body h4, .release-body h5 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-color);
+}
+
+.release-body ul {
+  padding-left: 1.5rem;
+}
+
+.release-body li {
+  margin-bottom: 0.5rem;
+}
+
+.release-body code {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.commit-item {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding-bottom: 1rem;
+}
+
+.commit-item:last-child {
+  border-bottom: none;
+}
+
+.version-info {
+  font-size: 0.9rem;
+}
+
+.version-info a {
+  color: var(--primary-color);
+  transition: color 0.3s ease;
+}
+
+.version-info a:hover {
+  color: var(--secondary-color);
+}
+
+/* Dark mode changelog overrides */
+[data-theme="darkmode"] .release-item {
+  border-bottom-color: #374151;
+}
+
+[data-theme="darkmode"] .commit-item {
+  border-bottom-color: #374151;
+}
+
+[data-theme="darkmode"] .release-body code {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="darkmode"] .version-info a {
+  color: #6366f1;
+}
+
+[data-theme="darkmode"] .version-info a:hover {
+  color: #8b5cf6;
 } 
