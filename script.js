@@ -9,6 +9,8 @@ let isRecording = false;
 let isReplayBufferActive = false;
 let audioSources = [];
 let currentFPS = 0;
+let statsInterval = null;
+let audioSyncInterval = null;
 
 // Theme switcher functionality
 function initThemeSwitcher() {
@@ -803,20 +805,20 @@ async function connect() {
         testObsConnection();
       }, 1000);
       
-             // Set up periodic updates
-       setInterval(() => {
-         if (socket.readyState === WebSocket.OPEN) {
-           getStats();
-         }
-       }, 2000); // Update stats every 2 seconds
-       
-               // Set up periodic audio source updates to sync with OBS
-        setInterval(() => {
-          if (socket.readyState === WebSocket.OPEN) {
-            console.log("🔄 Periodic audio sync triggered");
-            updateAudioSourceUI();
+                     // Set up periodic updates
+        statsInterval = setInterval(() => {
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            getStats();
           }
-        }, 2000); // Update audio sources every 2 seconds (more frequent)
+        }, 2000); // Update stats every 2 seconds
+        
+        // Set up periodic audio source updates to sync with OBS
+         audioSyncInterval = setInterval(() => {
+           if (socket && socket.readyState === WebSocket.OPEN) {
+             console.log("🔄 Periodic audio sync triggered");
+             updateAudioSourceUI();
+           }
+         }, 2000); // Update audio sources every 2 seconds (more frequent)
     }
 
     // Handle all other messages
@@ -1055,33 +1057,44 @@ function forceSyncWithOBS() {
   }
 }
 
- // Connection management functions
- function disconnectFromOBS() {
-   console.log("🔌 Disconnecting from OBS...");
-   if (socket) {
-     socket.close();
-     socket = null;
-   }
-   updateConnectionStatus("Disconnected");
-   updateStatus("Disconnected from OBS", "error");
-   
-   // Clear all UI elements
-   const sceneContainer = document.getElementById("scene-buttons");
-   const audioContainer = document.getElementById('audio-sources');
-   sceneContainer.innerHTML = '<div class="alert alert-warning">Disconnected from OBS</div>';
-   audioContainer.innerHTML = '<div class="alert alert-warning">Disconnected from OBS</div>';
-   
-   // Reset status indicators
-   updateStreamStatus('Inactive');
-   updateRecordingStatus('Inactive');
-   updateFPSStatus(0);
-   
-   // Update button state
-   const reconnectBtn = document.getElementById('reconnect-btn');
-   const disconnectBtn = document.getElementById('disconnect-btn');
-   if (reconnectBtn) reconnectBtn.disabled = false;
-   if (disconnectBtn) disconnectBtn.disabled = true;
- }
+   // Connection management functions
+  function disconnectFromOBS() {
+    console.log("🔌 Disconnecting from OBS...");
+    
+    // Clear intervals to prevent null socket access
+    if (statsInterval) {
+      clearInterval(statsInterval);
+      statsInterval = null;
+    }
+    if (audioSyncInterval) {
+      clearInterval(audioSyncInterval);
+      audioSyncInterval = null;
+    }
+    
+    if (socket) {
+      socket.close();
+      socket = null;
+    }
+    updateConnectionStatus("Disconnected");
+    updateStatus("Disconnected from OBS", "error");
+    
+    // Clear all UI elements
+    const sceneContainer = document.getElementById("scene-buttons");
+    const audioContainer = document.getElementById('audio-sources');
+    sceneContainer.innerHTML = '<div class="alert alert-warning">Disconnected from OBS</div>';
+    audioContainer.innerHTML = '<div class="alert alert-warning">Disconnected from OBS</div>';
+    
+    // Reset status indicators
+    updateStreamStatus('Inactive');
+    updateRecordingStatus('Inactive');
+    updateFPSStatus(0);
+    
+    // Update button state
+    const reconnectBtn = document.getElementById('reconnect-btn');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    if (reconnectBtn) reconnectBtn.disabled = false;
+    if (disconnectBtn) disconnectBtn.disabled = true;
+  }
 
  function reconnectToOBS() {
    console.log("🔌 Reconnecting to OBS...");
