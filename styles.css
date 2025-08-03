@@ -429,6 +429,36 @@ h1 {
   opacity: 1;
 }
 
+/* Mute Status Indicator */
+.mute-status {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 40px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.mute-status.muted {
+  background: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.mute-status.unmuted {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.mute-status-text {
+  margin: 0;
+  font-weight: 600;
+}
+
 /* Alerts */
 .alert {
   border-radius: 10px;
