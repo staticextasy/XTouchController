@@ -47,17 +47,17 @@ function updateActiveThemeButton(activeTheme) {
 function createSceneButton(sceneName) {
   const btn = document.createElement("button");
   btn.textContent = sceneName;
-  btn.className = "scene-button";
+  btn.className = "btn scene-button";
   btn.onclick = () => switchScene(sceneName);
   return btn;
 }
 
 function updateStatus(message, type = "connecting") {
   const container = document.getElementById("scene-buttons");
-  const statusClass = type === "error" ? "error" : type === "success" ? "success" : "connecting";
-  const loadingIcon = type === "connecting" ? '<span class="loading"></span>' : '';
+  const alertClass = type === "error" ? "alert-danger" : type === "success" ? "alert-success" : "alert-info";
+  const loadingIcon = type === "connecting" ? '<div class="spinner-border spinner-border-sm me-2" role="status"></div>' : '';
   
-  container.innerHTML = `<div class="status ${statusClass}">${loadingIcon}${message}</div>`;
+  container.innerHTML = `<div class="alert ${alertClass}">${loadingIcon}${message}</div>`;
   console.log("Status:", message);
 }
 
@@ -258,20 +258,20 @@ function updateFPSStatus(fps) {
 
 function createAudioSourceElement(source) {
   const audioDiv = document.createElement('div');
-  audioDiv.className = 'audio-source';
+  audioDiv.className = 'audio-source d-flex align-items-center justify-content-between';
   audioDiv.innerHTML = `
-    <div class="audio-info">
-      <span class="audio-name">${source.inputName}</span>
+    <div class="audio-info d-flex align-items-center">
+      <span class="audio-name me-3">${source.inputName}</span>
       <div class="audio-level">
         <div class="audio-level-fill" style="width: ${source.inputVolumeMul * 100}%"></div>
       </div>
     </div>
-    <div class="audio-controls">
-      <button class="audio-btn mute-btn ${source.inputMuted ? 'muted' : ''}" 
+    <div class="audio-controls d-flex align-items-center">
+      <button class="btn btn-sm audio-btn mute-btn ${source.inputMuted ? 'muted' : ''}" 
               onclick="toggleAudioMute('${source.inputName}')">
         ${source.inputMuted ? 'Unmute' : 'Mute'}
       </button>
-      <input type="range" class="volume-slider" min="0" max="100" 
+      <input type="range" class="volume-slider ms-2" min="0" max="100" 
              value="${source.inputVolumeMul * 100}"
              onchange="setAudioVolume('${source.inputName}', this.value)">
     </div>
@@ -312,9 +312,9 @@ function handleObsMessage(msg) {
     const audioContainer = document.getElementById('audio-sources');
     audioContainer.innerHTML = '';
     
-    if (audioSources.length === 0) {
-      audioContainer.innerHTML = '<div class="status">No audio sources found</div>';
-    } else {
+            if (audioSources.length === 0) {
+          audioContainer.innerHTML = '<div class="alert alert-warning">No audio sources found</div>';
+        } else {
       audioSources.forEach(source => {
         audioContainer.appendChild(createAudioSourceElement(source));
       });
