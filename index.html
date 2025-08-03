@@ -329,6 +329,239 @@
     .scene-button.active:hover {
       box-shadow: 0 15px 35px rgba(102, 187, 106, 0.4);
     }
+
+    /* Status Panel */
+    .status-panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 15px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .status-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .status-label {
+      font-size: 0.9rem;
+      color: #666;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .status-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 20px;
+      background: rgba(0, 0, 0, 0.1);
+      color: #333;
+    }
+
+    .status-value.connected { background: rgba(76, 175, 80, 0.2); color: #2e7d32; }
+    .status-value.disconnected { background: rgba(244, 67, 54, 0.2); color: #c62828; }
+    .status-value.active { background: rgba(76, 175, 80, 0.2); color: #2e7d32; }
+    .status-value.inactive { background: rgba(158, 158, 158, 0.2); color: #616161; }
+
+    /* Control Sections */
+    .control-section {
+      margin-bottom: 40px;
+      padding: 25px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 15px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .control-section h2 {
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      color: #333;
+      text-align: center;
+    }
+
+    .control-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+    }
+
+    .control-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 20px 15px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      background: var(--button-gradient);
+      color: white;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 15px var(--button-shadow);
+    }
+
+    .control-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px var(--button-hover-shadow);
+    }
+
+    .control-btn.active {
+      background: linear-gradient(135deg, #66bb6a, #43a047);
+      box-shadow: 0 4px 15px rgba(102, 187, 106, 0.3);
+    }
+
+    .btn-icon {
+      font-size: 1.5rem;
+    }
+
+    .btn-text {
+      font-size: 0.9rem;
+    }
+
+    /* Audio Controls */
+    .audio-source {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px;
+      margin-bottom: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 10px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .audio-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex: 1;
+    }
+
+    .audio-name {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .audio-level {
+      width: 100px;
+      height: 8px;
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .audio-level-fill {
+      height: 100%;
+      background: var(--button-gradient);
+      transition: width 0.3s ease;
+    }
+
+    .audio-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .audio-btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .mute-btn {
+      background: #ff6b6b;
+      color: white;
+    }
+
+    .mute-btn:hover {
+      background: #ff5252;
+    }
+
+    .mute-btn.muted {
+      background: #4caf50;
+    }
+
+    .mute-btn.muted:hover {
+      background: #45a049;
+    }
+
+    .volume-slider {
+      width: 80px;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(0, 0, 0, 0.1);
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--button-gradient);
+      cursor: pointer;
+    }
+
+    .volume-slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--button-gradient);
+      cursor: pointer;
+      border: none;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .status-panel {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        padding: 15px;
+      }
+
+      .control-buttons {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .audio-source {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+      }
+
+      .audio-controls {
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .status-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .control-section {
+        padding: 20px 15px;
+      }
+
+      .control-btn {
+        padding: 15px 10px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -341,10 +574,65 @@
       <button class="theme-btn" data-theme="midnight">🌙</button>
       <button class="theme-btn" data-theme="aurora">🌌</button>
     </div>
-    <div id="scene-buttons">
-      <div class="status connecting">
-        <span class="loading"></span>
-        Connecting to OBS...
+    
+    <!-- Status Monitoring -->
+    <div class="status-panel">
+      <div class="status-item">
+        <span class="status-label">Connection:</span>
+        <span class="status-value" id="connection-status">Disconnected</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Stream:</span>
+        <span class="status-value" id="stream-status">Inactive</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Recording:</span>
+        <span class="status-value" id="recording-status">Inactive</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">FPS:</span>
+        <span class="status-value" id="fps-status">--</span>
+      </div>
+    </div>
+
+    <!-- Stream/Record Controls -->
+    <div class="control-section">
+      <h2>📺 Stream & Record</h2>
+      <div class="control-buttons">
+        <button class="control-btn" id="stream-btn" onclick="toggleStream()">
+          <span class="btn-icon">📡</span>
+          <span class="btn-text">Start Stream</span>
+        </button>
+        <button class="control-btn" id="record-btn" onclick="toggleRecording()">
+          <span class="btn-icon">🔴</span>
+          <span class="btn-text">Start Recording</span>
+        </button>
+        <button class="control-btn" id="replay-btn" onclick="toggleReplayBuffer()">
+          <span class="btn-icon">⏪</span>
+          <span class="btn-text">Replay Buffer</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Audio Controls -->
+    <div class="control-section">
+      <h2>🎵 Audio Controls</h2>
+      <div id="audio-sources">
+        <div class="status connecting">
+          <span class="loading"></span>
+          Loading audio sources...
+        </div>
+      </div>
+    </div>
+
+    <!-- Scene Controls -->
+    <div class="control-section">
+      <h2>🎭 Scenes</h2>
+      <div id="scene-buttons">
+        <div class="status connecting">
+          <span class="loading"></span>
+          Connecting to OBS...
+        </div>
       </div>
     </div>
   </div>
@@ -406,106 +694,6 @@
       console.log("Status:", message);
     }
 
-    async function connect() {
-      updateStatus("Connecting to OBS...", "connecting");
-      socket = new WebSocket(`ws://${obsIP}:4455`);
-
-      socket.onopen = () => {
-        console.log("WebSocket opened");
-        updateStatus("Connected! Authenticating...", "connecting");
-      };
-
-      socket.onmessage = async (event) => {
-        console.log("Received message:", event.data);
-        const msg = JSON.parse(event.data);
-
-        // Handle identification
-        if (msg.op === 0) {
-          console.log("Received identification:", msg.d);
-          const { authentication, rpcVersion } = msg.d;
-          const { challenge, salt } = authentication;
-          const auth = await computeAuthResponse(password, salt, challenge);
-
-          const identifyMessage = {
-            op: 1,
-            d: {
-              rpcVersion,
-              authentication: auth
-            }
-          };
-          console.log("Sending identify:", identifyMessage);
-          socket.send(JSON.stringify(identifyMessage));
-        }
-
-        // Handle identified
-        if (msg.op === 2) {
-          console.log("Successfully identified!");
-          updateStatus("Authenticated! Fetching scenes...", "connecting");
-          getSceneList();
-        }
-
-        // Handle request response (success)
-        if (msg.op === 7 && msg.d.requestType === "GetSceneList") {
-          console.log("Scene list response:", msg.d);
-          if (msg.d.responseData && msg.d.responseData.scenes) {
-            const scenes = msg.d.responseData.scenes;
-            const container = document.getElementById("scene-buttons");
-            container.innerHTML = ""; // Clear loading message
-            scenes.forEach(s => {
-              container.appendChild(createSceneButton(s.sceneName));
-            });
-            console.log("Loaded", scenes.length, "scenes");
-          } else {
-            console.error("No scenes in response:", msg.d);
-            updateStatus("No scenes found in response", "error");
-          }
-        }
-
-        // Handle request response (success) - alternative format
-        if (msg.op === 7 && msg.d.requestType === "GetSceneList" && msg.d.responseData) {
-          console.log("Scene list response (alt):", msg.d);
-          const scenes = msg.d.responseData.scenes;
-          const container = document.getElementById("scene-buttons");
-          container.innerHTML = "";
-          scenes.forEach(s => {
-            container.appendChild(createSceneButton(s.sceneName));
-          });
-          console.log("Loaded", scenes.length, "scenes");
-        }
-
-        // Handle errors
-        if (msg.op === 7 && msg.d.error) {
-          console.error("Request error:", msg.d);
-          updateStatus(`Error: ${msg.d.error}`, "error");
-        }
-
-        // Handle authentication failure
-        if (msg.op === 7 && msg.d.error && msg.d.error.includes("authentication")) {
-          console.error("Authentication failed:", msg.d.error);
-          updateStatus("Authentication failed - check password", "error");
-        }
-
-        // Handle scene switch response
-        if (msg.op === 7 && msg.d.requestType === "SetCurrentProgramScene") {
-          if (msg.d.error) {
-            console.error("Scene switch error:", msg.d.error);
-          } else {
-            console.log("Scene switched successfully");
-          }
-        }
-      };
-
-      socket.onerror = (err) => {
-        console.error("WebSocket error:", err);
-        updateStatus("Connection error - check OBS WebSocket server", "error");
-      };
-
-      socket.onclose = (event) => {
-        console.log("WebSocket closed:", event.code, event.reason);
-        updateStatus("Connection closed", "error");
-      };
-    }
-
     async function computeAuthResponse(password, salt, challenge) {
       const enc = new TextEncoder();
       const base64 = buffer => btoa(String.fromCharCode(...new Uint8Array(buffer)));
@@ -547,6 +735,374 @@
     // Start the connection
     connect();
     initThemeSwitcher(); // Initialize theme switcher
+
+    // Global state variables
+    let isStreaming = false;
+    let isRecording = false;
+    let isReplayBufferActive = false;
+    let audioSources = [];
+    let currentFPS = 0;
+
+    // Stream/Record Control Functions
+    async function toggleStream() {
+      const request = {
+        op: 6,
+        d: {
+          requestType: isStreaming ? "StopStream" : "StartStream",
+          requestId: "stream-toggle-" + Date.now()
+        }
+      };
+      console.log(isStreaming ? "Stopping stream..." : "Starting stream...");
+      socket.send(JSON.stringify(request));
+    }
+
+    async function toggleRecording() {
+      const request = {
+        op: 6,
+        d: {
+          requestType: isRecording ? "StopRecord" : "StartRecord",
+          requestId: "record-toggle-" + Date.now()
+        }
+      };
+      console.log(isRecording ? "Stopping recording..." : "Starting recording...");
+      socket.send(JSON.stringify(request));
+    }
+
+    async function toggleReplayBuffer() {
+      const request = {
+        op: 6,
+        d: {
+          requestType: isReplayBufferActive ? "StopReplayBuffer" : "StartReplayBuffer",
+          requestId: "replay-toggle-" + Date.now()
+        }
+      };
+      console.log(isReplayBufferActive ? "Stopping replay buffer..." : "Starting replay buffer...");
+      socket.send(JSON.stringify(request));
+    }
+
+    // Audio Control Functions
+    async function getAudioSources() {
+      const request = {
+        op: 6,
+        d: {
+          requestType: "GetInputList",
+          requestId: "audio-sources-" + Date.now()
+        }
+      };
+      socket.send(JSON.stringify(request));
+    }
+
+    async function toggleAudioMute(inputName) {
+      const request = {
+        op: 6,
+        d: {
+          requestType: "ToggleInputMute",
+          requestId: "mute-toggle-" + Date.now(),
+          requestData: {
+            inputName: inputName
+          }
+        }
+      };
+      socket.send(JSON.stringify(request));
+    }
+
+    async function setAudioVolume(inputName, volume) {
+      const request = {
+        op: 6,
+        d: {
+          requestType: "SetInputVolume",
+          requestId: "volume-set-" + Date.now(),
+          requestData: {
+            inputName: inputName,
+            inputVolumeMul: volume / 100
+          }
+        }
+      };
+      socket.send(JSON.stringify(request));
+    }
+
+    // Status Monitoring Functions
+    async function getStreamStatus() {
+      const request = {
+        op: 6,
+        d: {
+          requestType: "GetStreamStatus",
+          requestId: "stream-status-" + Date.now()
+        }
+      };
+      socket.send(JSON.stringify(request));
+    }
+
+    async function getRecordStatus() {
+      const request = {
+        op: 6,
+        d: {
+          requestType: "GetRecordStatus",
+          requestId: "record-status-" + Date.now()
+        }
+      };
+      socket.send(JSON.stringify(request));
+    }
+
+    async function getReplayBufferStatus() {
+      const request = {
+        op: 6,
+        d: {
+          requestType: "GetReplayBufferStatus",
+          requestId: "replay-status-" + Date.now()
+        }
+      };
+      socket.send(JSON.stringify(request));
+    }
+
+    async function getStats() {
+      const request = {
+        op: 6,
+        d: {
+          requestType: "GetStats",
+          requestId: "stats-" + Date.now()
+        }
+      };
+      socket.send(JSON.stringify(request));
+    }
+
+    // UI Update Functions
+    function updateConnectionStatus(status) {
+      const element = document.getElementById('connection-status');
+      element.textContent = status;
+      element.className = 'status-value ' + (status === 'Connected' ? 'connected' : 'disconnected');
+    }
+
+    function updateStreamStatus(status) {
+      const element = document.getElementById('stream-status');
+      const btn = document.getElementById('stream-btn');
+      element.textContent = status;
+      element.className = 'status-value ' + (status === 'Active' ? 'active' : 'inactive');
+      
+      isStreaming = status === 'Active';
+      btn.className = 'control-btn' + (isStreaming ? ' active' : '');
+      btn.querySelector('.btn-text').textContent = isStreaming ? 'Stop Stream' : 'Start Stream';
+    }
+
+    function updateRecordingStatus(status) {
+      const element = document.getElementById('recording-status');
+      const btn = document.getElementById('record-btn');
+      element.textContent = status;
+      element.className = 'status-value ' + (status === 'Active' ? 'active' : 'inactive');
+      
+      isRecording = status === 'Active';
+      btn.className = 'control-btn' + (isRecording ? ' active' : '');
+      btn.querySelector('.btn-text').textContent = isRecording ? 'Stop Recording' : 'Start Recording';
+    }
+
+    function updateFPSStatus(fps) {
+      const element = document.getElementById('fps-status');
+      element.textContent = fps.toFixed(1);
+    }
+
+    function createAudioSourceElement(source) {
+      const audioDiv = document.createElement('div');
+      audioDiv.className = 'audio-source';
+      audioDiv.innerHTML = `
+        <div class="audio-info">
+          <span class="audio-name">${source.inputName}</span>
+          <div class="audio-level">
+            <div class="audio-level-fill" style="width: ${source.inputVolumeMul * 100}%"></div>
+          </div>
+        </div>
+        <div class="audio-controls">
+          <button class="audio-btn mute-btn ${source.inputMuted ? 'muted' : ''}" 
+                  onclick="toggleAudioMute('${source.inputName}')">
+            ${source.inputMuted ? 'Unmute' : 'Mute'}
+          </button>
+          <input type="range" class="volume-slider" min="0" max="100" 
+                 value="${source.inputVolumeMul * 100}"
+                 onchange="setAudioVolume('${source.inputName}', this.value)">
+        </div>
+      `;
+      return audioDiv;
+    }
+
+    // Enhanced message handler
+    function handleObsMessage(msg) {
+      console.log("Handling message:", msg);
+
+      // Handle stream status
+      if (msg.op === 7 && msg.d.requestType === "GetStreamStatus") {
+        const isActive = msg.d.responseData?.outputActive || false;
+        updateStreamStatus(isActive ? 'Active' : 'Inactive');
+      }
+
+      // Handle record status
+      if (msg.op === 7 && msg.d.requestType === "GetRecordStatus") {
+        const isActive = msg.d.responseData?.outputActive || false;
+        updateRecordingStatus(isActive ? 'Active' : 'Inactive');
+      }
+
+      // Handle replay buffer status
+      if (msg.op === 7 && msg.d.requestType === "GetReplayBufferStatus") {
+        const isActive = msg.d.responseData?.outputActive || false;
+        isReplayBufferActive = isActive;
+        const btn = document.getElementById('replay-btn');
+        btn.className = 'control-btn' + (isActive ? ' active' : '');
+        btn.querySelector('.btn-text').textContent = isActive ? 'Stop Replay' : 'Start Replay';
+      }
+
+      // Handle audio sources
+      if (msg.op === 7 && msg.d.requestType === "GetInputList") {
+        const inputs = msg.d.responseData?.inputs || [];
+        audioSources = inputs.filter(input => input.inputKind.includes('audio'));
+        
+        const audioContainer = document.getElementById('audio-sources');
+        audioContainer.innerHTML = '';
+        
+        if (audioSources.length === 0) {
+          audioContainer.innerHTML = '<div class="status">No audio sources found</div>';
+        } else {
+          audioSources.forEach(source => {
+            audioContainer.appendChild(createAudioSourceElement(source));
+          });
+        }
+      }
+
+      // Handle stats
+      if (msg.op === 7 && msg.d.requestType === "GetStats") {
+        const stats = msg.d.responseData;
+        if (stats?.fps) {
+          updateFPSStatus(stats.fps);
+        }
+      }
+
+      // Handle stream/record toggle responses
+      if (msg.op === 7 && (msg.d.requestType === "StartStream" || msg.d.requestType === "StopStream")) {
+        if (!msg.d.error) {
+          getStreamStatus(); // Refresh status
+        }
+      }
+
+      if (msg.op === 7 && (msg.d.requestType === "StartRecord" || msg.d.requestType === "StopRecord")) {
+        if (!msg.d.error) {
+          getRecordStatus(); // Refresh status
+        }
+      }
+
+      if (msg.op === 7 && (msg.d.requestType === "StartReplayBuffer" || msg.d.requestType === "StopReplayBuffer")) {
+        if (!msg.d.error) {
+          getReplayBufferStatus(); // Refresh status
+        }
+      }
+    }
+
+    // Enhanced connection function
+    async function connect() {
+      updateStatus("Connecting to OBS...", "connecting");
+      updateConnectionStatus("Connecting");
+      socket = new WebSocket(`ws://${obsIP}:4455`);
+
+      socket.onopen = () => {
+        console.log("WebSocket opened");
+        updateStatus("Connected! Authenticating...", "connecting");
+        updateConnectionStatus("Connected");
+      };
+
+      socket.onmessage = async (event) => {
+        console.log("Received message:", event.data);
+        const msg = JSON.parse(event.data);
+
+        // Handle identification
+        if (msg.op === 0) {
+          console.log("Received identification:", msg.d);
+          const { authentication, rpcVersion } = msg.d;
+          const { challenge, salt } = authentication;
+          const auth = await computeAuthResponse(password, salt, challenge);
+
+          const identifyMessage = {
+            op: 1,
+            d: {
+              rpcVersion,
+              authentication: auth
+            }
+          };
+          console.log("Sending identify:", identifyMessage);
+          socket.send(JSON.stringify(identifyMessage));
+        }
+
+        // Handle identified
+        if (msg.op === 2) {
+          console.log("Successfully identified!");
+          updateStatus("Authenticated! Loading data...", "connecting");
+          
+          // Load all data
+          getSceneList();
+          getAudioSources();
+          getStreamStatus();
+          getRecordStatus();
+          getReplayBufferStatus();
+          getStats();
+          
+          // Set up periodic updates
+          setInterval(() => {
+            if (socket.readyState === WebSocket.OPEN) {
+              getStats();
+            }
+          }, 2000); // Update stats every 2 seconds
+        }
+
+        // Handle all other messages
+        handleObsMessage(msg);
+
+        // Original scene handling
+        if (msg.op === 7 && msg.d.requestType === "GetSceneList") {
+          console.log("Scene list response:", msg.d);
+          if (msg.d.responseData && msg.d.responseData.scenes) {
+            const scenes = msg.d.responseData.scenes;
+            const container = document.getElementById("scene-buttons");
+            container.innerHTML = ""; // Clear loading message
+            scenes.forEach(s => {
+              container.appendChild(createSceneButton(s.sceneName));
+            });
+            console.log("Loaded", scenes.length, "scenes");
+          } else {
+            console.error("No scenes in response:", msg.d);
+            updateStatus("No scenes found in response", "error");
+          }
+        }
+
+        // Handle errors
+        if (msg.op === 7 && msg.d.error) {
+          console.error("Request error:", msg.d);
+          updateStatus(`Error: ${msg.d.error}`, "error");
+        }
+
+        // Handle authentication failure
+        if (msg.op === 7 && msg.d.error && msg.d.error.includes("authentication")) {
+          console.error("Authentication failed:", msg.d.error);
+          updateStatus("Authentication failed - check password", "error");
+          updateConnectionStatus("Auth Failed");
+        }
+
+        // Handle scene switch response
+        if (msg.op === 7 && msg.d.requestType === "SetCurrentProgramScene") {
+          if (msg.d.error) {
+            console.error("Scene switch error:", msg.d.error);
+          } else {
+            console.log("Scene switched successfully");
+          }
+        }
+      };
+
+      socket.onerror = (err) => {
+        console.error("WebSocket error:", err);
+        updateStatus("Connection error - check OBS WebSocket server", "error");
+        updateConnectionStatus("Error");
+      };
+
+      socket.onclose = (event) => {
+        console.log("WebSocket closed:", event.code, event.reason);
+        updateStatus("Connection closed", "error");
+        updateConnectionStatus("Disconnected");
+      };
+    }
   </script>
 </body>
 </html>
