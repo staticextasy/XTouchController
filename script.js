@@ -229,7 +229,14 @@ async function toggleAudioMute(inputName) {
 }
 
 async function setAudioVolume(inputName, volume) {
-  console.log(`Setting volume for ${inputName} to ${volume}%`);
+  // Ensure volume is a number and convert to float
+  const volumeValue = parseFloat(volume);
+  const volumeMultiplier = volumeValue / 100;
+  
+  console.log(`Setting volume for ${inputName}:`);
+  console.log(`  - Raw slider value: ${volume}`);
+  console.log(`  - Parsed value: ${volumeValue}`);
+  console.log(`  - Volume multiplier: ${volumeMultiplier}`);
   
   // Check if socket is connected
   if (!socket || socket.readyState !== WebSocket.OPEN) {
@@ -244,7 +251,7 @@ async function setAudioVolume(inputName, volume) {
       requestId: "volume-set-" + Date.now(),
       requestData: {
         inputName: inputName,
-        inputVolumeMul: volume / 100
+        inputVolumeMul: volumeMultiplier
       }
     }
   };
@@ -368,6 +375,9 @@ function createAudioSourceElement(source) {
   });
   
   volumeSlider.addEventListener('change', (e) => {
+    console.log(`Slider changed for ${source.inputName}:`);
+    console.log(`  - Event target value: ${e.target.value}`);
+    console.log(`  - Event target type: ${typeof e.target.value}`);
     setAudioVolume(source.inputName, e.target.value);
   });
   
