@@ -11,6 +11,7 @@ let audioSources = [];
 let currentFPS = 0;
 let statsInterval = null;
 let audioSyncInterval = null;
+let muteRequests = new Map(); // Use module-level variable instead of window
 
 // Theme switcher functionality
 function initThemeSwitcher() {
@@ -180,17 +181,13 @@ async function getInputMute(inputName) {
   console.log(`Getting mute status for: ${inputName} with requestId: ${requestId}`);
   
   // Store the input name for this request
-  if (!window.muteRequests) {
-    window.muteRequests = new Map();
-    console.log(`📝 Created new window.muteRequests Map`);
-  }
-  window.muteRequests.set(requestId, inputName);
+  muteRequests.set(requestId, inputName);
   console.log(`📝 Stored requestId: ${requestId} -> ${inputName}`);
-  console.log(`📝 Total stored requests: ${window.muteRequests.size}`);
+  console.log(`📝 Total stored requests: ${muteRequests.size}`);
   console.log(`📝 Map contents after storing:`, {
-    size: window.muteRequests.size,
-    keys: Array.from(window.muteRequests.keys()),
-    values: Array.from(window.muteRequests.values())
+    size: muteRequests.size,
+    keys: Array.from(muteRequests.keys()),
+    values: Array.from(muteRequests.values())
   });
   
   socket.send(JSON.stringify(request));
@@ -685,16 +682,12 @@ function handleObsMessage(msg) {
       // Get the input name from our stored request mapping
       const requestId = msg.d.requestId;
       console.log(`🔍 Looking for requestId: ${requestId}`);
-      console.log(`🔍 window.muteRequests exists: ${!!window.muteRequests}`);
-      if (window.muteRequests) {
-        console.log(`🔍 window.muteRequests size: ${window.muteRequests.size}`);
-        console.log(`🔍 All stored requestIds:`, Array.from(window.muteRequests.keys()));
-        console.log(`🔍 All stored values:`, Array.from(window.muteRequests.values()));
-      } else {
-        console.error(`❌ window.muteRequests is null/undefined!`);
-      }
+      console.log(`🔍 muteRequests exists: ${!!muteRequests}`);
+      console.log(`🔍 muteRequests size: ${muteRequests.size}`);
+      console.log(`🔍 All stored requestIds:`, Array.from(muteRequests.keys()));
+      console.log(`🔍 All stored values:`, Array.from(muteRequests.values()));
       
-      const inputName = window.muteRequests ? window.muteRequests.get(requestId) : null;
+      const inputName = muteRequests.get(requestId);
       const inputMuted = msg.d.responseData.inputMuted;
       
       if (inputName) {
@@ -722,17 +715,15 @@ function handleObsMessage(msg) {
         }
         
         // Clean up the request mapping
-        if (window.muteRequests) {
-          window.muteRequests.delete(requestId);
-          console.log(`🗑️ Cleaned up requestId: ${requestId}`);
-        }
+        muteRequests.delete(requestId);
+        console.log(`🗑️ Cleaned up requestId: ${requestId}`);
       } else {
         console.error(`❌ Could not find input name for requestId: ${requestId}`);
         console.error(`❌ This might be due to page refresh or timing issues`);
         console.error(`❌ Map state:`, {
-          exists: !!window.muteRequests,
-          size: window.muteRequests ? window.muteRequests.size : 'N/A',
-          keys: window.muteRequests ? Array.from(window.muteRequests.keys()) : 'N/A'
+          exists: !!muteRequests,
+          size: muteRequests.size,
+          keys: Array.from(muteRequests.keys())
         });
       }
     }
