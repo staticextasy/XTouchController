@@ -1,13 +1,16 @@
-# OBS Scene Switcher
+# X Touch Controller (XTC)
 
-A simple web-based controller for switching OBS Studio scenes via WebSocket connection.
+A comprehensive web-based controller for OBS Studio with scene switching, stream/record controls, audio management, and real-time monitoring via WebSocket connection.
 
 ## Features
 
-- Connect to OBS Studio via WebSocket
-- Display all available scenes as clickable buttons
-- Switch between scenes with a single click
-- Real-time status updates and error handling
+- **Scene Management**: Connect to OBS Studio via WebSocket and switch between scenes
+- **Stream & Record Controls**: Start/stop streaming, recording, and replay buffer
+- **Audio Management**: Control volume and mute/unmute individual audio sources
+- **Real-time Monitoring**: Live status updates for connection, stream, recording, and FPS
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
+- **Theme Customization**: Multiple color schemes with persistent settings
+- **Professional UI**: Modern, intuitive interface with smooth animations
 
 ## Setup
 
@@ -36,8 +39,13 @@ const obsIP = "YOUR_OBS_PC_IP_ADDRESS";          // Your OBS PC's IP address
 
 1. Open `index.html` in a web browser
 2. The page will automatically connect to OBS
-3. Once connected, you'll see buttons for all available scenes
-4. Click any scene button to switch to that scene
+3. Once connected, you'll see:
+   - **Status Panel**: Real-time connection, stream, recording, and FPS status
+   - **Stream & Record Controls**: Buttons to start/stop streaming, recording, and replay buffer
+   - **Audio Controls**: Volume sliders and mute buttons for all audio sources
+   - **Scene Controls**: Buttons for all available scenes
+4. Use the theme switcher (top-right) to customize the appearance
+5. All controls are touch-friendly and work on mobile devices
 
 ## Troubleshooting
 
