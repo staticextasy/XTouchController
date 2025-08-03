@@ -162,19 +162,19 @@ async function getAllInputs() {
   socket.send(JSON.stringify(request));
 }
 
-// Function to get specific input properties
-async function getInputProperties(inputName) {
+// Function to get specific input settings (OBS WebSocket v5 uses GetInputSettings)
+async function getInputSettings(inputName) {
   const request = {
     op: 6,
     d: {
-      requestType: "GetInputProperties",
-      requestId: "input-props-" + Date.now(),
+      requestType: "GetInputSettings",
+      requestId: "input-settings-" + Date.now(),
       requestData: {
         inputName: inputName
       }
     }
   };
-  console.log(`Getting properties for: ${inputName}`);
+  console.log(`Getting settings for: ${inputName}`);
   socket.send(JSON.stringify(request));
 }
 
@@ -539,12 +539,12 @@ function handleObsMessage(msg) {
     
     console.log("Filtered audio sources:", audioSources);
     
-    // If this is a UI update request and we have audio sources, get their properties
+    // If this is a UI update request and we have audio sources, get their settings
     const isUIUpdate = msg.d.requestId?.includes("update-ui");
     if (isUIUpdate && audioSources.length > 0) {
-      console.log("🔄 UI update requested - getting audio source properties");
+      console.log("🔄 UI update requested - getting audio source settings");
       audioSources.forEach(source => {
-        getInputProperties(source.inputName);
+        getInputSettings(source.inputName);
       });
     }
     
@@ -635,28 +635,22 @@ function handleObsMessage(msg) {
     }
   }
 
-  // Handle input properties response (for mute status updates)
-  if (msg.op === 7 && msg.d.requestType === "GetInputProperties") {
-    console.log("Input properties response:", msg.d);
+  // Handle input settings response (for mute status updates)
+  if (msg.op === 7 && msg.d.requestType === "GetInputSettings") {
+    console.log("Input settings response:", msg.d);
     if (!msg.d.error && msg.d.responseData) {
       const inputName = msg.d.responseData.inputName;
-      const properties = msg.d.responseData.inputProperties;
+      const inputSettings = msg.d.responseData.inputSettings;
       
-      // Look for mute and volume properties
-      const muteProperty = properties.find(prop => prop.propertyName === 'input_muted');
-      const volumeProperty = properties.find(prop => prop.propertyName === 'input_volume');
+      // Look for mute setting
+      const isMuted = inputSettings?.input_muted === true;
       
-      if (muteProperty || volumeProperty) {
-        console.log(`🔧 Updating properties for ${inputName}:`, {
-          muted: muteProperty?.propertyValue,
-          volume: volumeProperty?.propertyValue
-        });
+      if (isMuted !== undefined) {
+        console.log(`🔧 Updating mute setting for ${inputName}:`, { muted: isMuted });
         
         // Update the specific audio source
         const muteBtn = document.querySelector(`.mute-btn[data-input-name="${inputName}"]`);
-        if (muteBtn && muteProperty) {
-          const isMuted = muteProperty.propertyValue === true;
-          
+        if (muteBtn) {
           // Update button text and class
           muteBtn.textContent = isMuted ? 'Unmute' : 'Mute';
           muteBtn.className = `btn btn-sm audio-btn mute-btn ${isMuted ? 'muted' : ''}`;
@@ -889,23 +883,31 @@ async function connect() {
   }, 5000); // 5 second timeout
 }
 
- // Initialize the application
- document.addEventListener('DOMContentLoaded', function() {
-   // Load version information
-   loadVersionInfo();
-   
-   // Initialize theme switcher
-   initThemeSwitcher();
-   
-   // Set initial button states
-   const reconnectBtn = document.getElementById('reconnect-btn');
-   const disconnectBtn = document.getElementById('disconnect-btn');
-   if (reconnectBtn) reconnectBtn.disabled = false;
-   if (disconnectBtn) disconnectBtn.disabled = true;
-   
-   // Start the connection
-   connect();
- });
+   // Initialize the application
+  document.addEventListener('DOMContentLoaded', function() {
+    // Load version information
+    loadVersionInfo();
+    
+    // Initialize theme switcher
+    initThemeSwitcher();
+    
+    // Set up disconnect/reconnect button event listeners
+    const reconnectBtn = document.getElementById('reconnect-btn');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    
+    if (reconnectBtn) {
+      reconnectBtn.addEventListener('click', reconnectToOBS);
+      reconnectBtn.disabled = false;
+    }
+    
+    if (disconnectBtn) {
+      disconnectBtn.addEventListener('click', disconnectFromOBS);
+      disconnectBtn.disabled = true;
+    }
+    
+    // Start the connection
+    connect();
+  });
 
 // Load version information from package.json
 async function loadVersionInfo() {
