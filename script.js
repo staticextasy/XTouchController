@@ -182,8 +182,11 @@ async function getInputMute(inputName) {
   // Store the input name for this request
   if (!window.muteRequests) {
     window.muteRequests = new Map();
+    console.log(`📝 Created new window.muteRequests Map`);
   }
   window.muteRequests.set(requestId, inputName);
+  console.log(`📝 Stored requestId: ${requestId} -> ${inputName}`);
+  console.log(`📝 Total stored requests: ${window.muteRequests.size}`);
   
   socket.send(JSON.stringify(request));
 }
@@ -675,6 +678,13 @@ function handleObsMessage(msg) {
     if (!msg.d.error && msg.d.responseData) {
       // Get the input name from our stored request mapping
       const requestId = msg.d.requestId;
+      console.log(`🔍 Looking for requestId: ${requestId}`);
+      console.log(`🔍 window.muteRequests exists: ${!!window.muteRequests}`);
+      if (window.muteRequests) {
+        console.log(`🔍 window.muteRequests size: ${window.muteRequests.size}`);
+        console.log(`🔍 All stored requestIds:`, Array.from(window.muteRequests.keys()));
+      }
+      
       const inputName = window.muteRequests ? window.muteRequests.get(requestId) : null;
       const inputMuted = msg.d.responseData.inputMuted;
       
@@ -705,9 +715,11 @@ function handleObsMessage(msg) {
         // Clean up the request mapping
         if (window.muteRequests) {
           window.muteRequests.delete(requestId);
+          console.log(`🗑️ Cleaned up requestId: ${requestId}`);
         }
       } else {
         console.error(`❌ Could not find input name for requestId: ${requestId}`);
+        console.error(`❌ This might be due to page refresh or timing issues`);
       }
     }
   }
