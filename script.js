@@ -237,29 +237,33 @@ async function setAudioVolume(inputName, volume) {
   let volumeMultiplier;
   let calculatedDb;
   
-  if (volumeValue === 0) {
-    volumeMultiplier = 0; // Mute
-    calculatedDb = -60;
-  } else if (volumeValue === 100) {
-    volumeMultiplier = 1; // Full volume (0 dB)
-    calculatedDb = 0;
-  } else {
-    // Convert percentage to dB using our -60 to 0 dB scale
-    calculatedDb = (volumeValue / 100) * 60 - 60; // Linear interpolation
-    
-         // Apply the inverse of our human-friendly mapping
+     let obsDb; // Declare obsDb at function scope
+   
+   if (volumeValue === 0) {
+     volumeMultiplier = 0; // Mute
+     calculatedDb = -60;
+     obsDb = -60;
+   } else if (volumeValue === 100) {
+     volumeMultiplier = 1; // Full volume (0 dB)
+     calculatedDb = 0;
+     obsDb = 0;
+   } else {
+     // Convert percentage to dB using our -60 to 0 dB scale
+     calculatedDb = (volumeValue / 100) * 60 - 60; // Linear interpolation
+     
+     // Apply the inverse of our human-friendly mapping
      // Convert our slider percentage back to OBS's dB scale
      
      // Inverse of the power curve: obsDb = (sliderValue/100)^(1/1.5) * 60 - 60
      const normalizedSlider = volumeValue / 100; // 0 to 1 range
      const normalizedObsDb = Math.pow(normalizedSlider, 1/1.5); // Inverse power curve
-     const obsDb = normalizedObsDb * 60 - 60; // Convert back to -60 to 0 dB range
+     obsDb = normalizedObsDb * 60 - 60; // Convert back to -60 to 0 dB range
      
      // Convert OBS's dB to multiplier: multiplier = 10^(obsDb/20)
      volumeMultiplier = Math.pow(10, obsDb / 20);
-  }
-  
-     console.log(`Setting volume for ${inputName}:`);
+   }
+   
+   console.log(`Setting volume for ${inputName}:`);
    console.log(`  - Raw slider value: ${volume}%`);
    console.log(`  - Parsed value: ${volumeValue}%`);
    console.log(`  - Our calculated dB: ${calculatedDb.toFixed(2)} dB`);
