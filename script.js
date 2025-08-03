@@ -514,6 +514,7 @@ function handleObsMessage(msg) {
     console.log("=== ALL INPUTS DEBUG ===");
     inputs.forEach(input => {
       console.log(`Input: ${input.inputName} | Kind: ${input.inputKind} | Muted: ${input.inputMuted} | Volume: ${input.inputVolumeMul}`);
+      console.log(`  Full input object:`, input);
     });
     console.log("=== END DEBUG ===");
   }
@@ -522,6 +523,14 @@ function handleObsMessage(msg) {
   if (msg.op === 7 && msg.d.requestType === "GetInputList" && !msg.d.requestId?.includes("all-inputs")) {
     const inputs = msg.d.responseData?.inputs || [];
     console.log("All inputs received:", inputs);
+    
+    // Debug: Log the first input to see what properties are available
+    if (inputs.length > 0) {
+      console.log("=== FIRST INPUT DEBUG ===");
+      console.log("First input object:", inputs[0]);
+      console.log("Available properties:", Object.keys(inputs[0]));
+      console.log("=== END FIRST INPUT DEBUG ===");
+    }
     
     // More comprehensive audio source filtering
     audioSources = inputs.filter(input => {
