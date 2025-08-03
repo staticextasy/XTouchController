@@ -125,6 +125,8 @@ h1 {
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 15px;
   transition: all 0.3s ease;
+  margin-bottom: 1rem;
+  padding: 1.5rem 1rem;
 }
 
 .status-card:hover {
