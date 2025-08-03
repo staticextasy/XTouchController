@@ -433,7 +433,9 @@ function handleObsMessage(msg) {
     console.log("Filtered audio sources:", audioSources);
     
     const audioContainer = document.getElementById('audio-sources');
-    audioContainer.innerHTML = '';
+    
+    // Check if this is a UI update request (not initial load)
+    const isUIUpdate = msg.d.requestId?.includes("update-ui");
     
     if (audioSources.length === 0) {
       audioContainer.innerHTML = `
@@ -444,9 +446,16 @@ function handleObsMessage(msg) {
         </div>
       `;
     } else {
-      audioSources.forEach(source => {
-        audioContainer.appendChild(createAudioSourceElement(source));
-      });
+      if (isUIUpdate) {
+        // Update existing controls without recreating them
+        updateExistingAudioControls(audioSources);
+      } else {
+        // Initial load - create all controls
+        audioContainer.innerHTML = '';
+        audioSources.forEach(source => {
+          audioContainer.appendChild(createAudioSourceElement(source));
+        });
+      }
     }
   }
 
@@ -494,8 +503,8 @@ function handleObsMessage(msg) {
     console.log("Mute toggle response:", msg.d);
     if (!msg.d.error) {
       console.log("✅ Mute toggle successful");
-      // Refresh audio sources to update UI
-      getAudioSources();
+      // Update the specific button text without full refresh
+      updateAudioSourceUI();
     } else {
       console.error("❌ Mute toggle failed:", msg.d.error);
     }
@@ -505,8 +514,8 @@ function handleObsMessage(msg) {
     console.log("Volume set response:", msg.d);
     if (!msg.d.error) {
       console.log("✅ Volume set successful");
-      // Refresh audio sources to update UI
-      getAudioSources();
+      // Don't refresh UI for volume changes to prevent slider snapping
+      // The slider will stay where the user set it
     } else {
       console.error("❌ Volume set failed:", msg.d.error);
     }
@@ -663,6 +672,49 @@ async function loadVersionInfo() {
   } catch (error) {
     console.error('Failed to load version info:', error);
   }
+}
+
+// Function to update audio source UI without full refresh
+async function updateAudioSourceUI() {
+  // Get current audio sources to update button states
+  const request = {
+    op: 6,
+    d: {
+      requestType: "GetInputList",
+      requestId: "update-ui-" + Date.now()
+    }
+  };
+  socket.send(JSON.stringify(request));
+}
+
+// Function to update existing audio controls without recreating them
+function updateExistingAudioControls(audioSources) {
+  audioSources.forEach(source => {
+    const muteBtn = document.querySelector(`[data-input-name="${source.inputName}"]`);
+    if (muteBtn) {
+      // Update button text and class
+      muteBtn.textContent = source.inputMuted ? 'Unmute' : 'Mute';
+      muteBtn.className = `btn btn-sm audio-btn mute-btn ${source.inputMuted ? 'muted' : ''}`;
+      
+      // Update volume slider value (but don't trigger change event)
+      const volumeSlider = muteBtn.parentElement.querySelector('.volume-slider');
+      if (volumeSlider) {
+        const currentValue = volumeSlider.value;
+        const newValue = source.inputVolumeMul * 100;
+        
+        // Only update if the difference is significant (more than 1%)
+        if (Math.abs(currentValue - newValue) > 1) {
+          volumeSlider.value = newValue;
+        }
+      }
+      
+      // Update audio level indicator
+      const audioLevelFill = muteBtn.parentElement.parentElement.querySelector('.audio-level-fill');
+      if (audioLevelFill) {
+        audioLevelFill.style.width = `${source.inputVolumeMul * 100}%`;
+      }
+    }
+  });
 }
 
 // Global functions for debugging (accessible from browser console)
