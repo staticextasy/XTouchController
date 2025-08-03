@@ -237,6 +237,7 @@ async function setAudioVolume(inputName, volume) {
   console.log(`  - Raw slider value: ${volume}`);
   console.log(`  - Parsed value: ${volumeValue}`);
   console.log(`  - Volume multiplier: ${volumeMultiplier}`);
+  console.log(`  - Expected percentage: ${(volumeMultiplier * 100).toFixed(1)}%`);
   
   // Check if socket is connected
   if (!socket || socket.readyState !== WebSocket.OPEN) {
@@ -528,6 +529,36 @@ function handleObsMessage(msg) {
       // The slider will stay where the user set it
     } else {
       console.error("❌ Volume set failed:", msg.d.error);
+    }
+  }
+
+  // Handle volume change events from OBS
+  if (msg.op === 5 && msg.d.eventType === "InputVolumeChanged") {
+    const eventData = msg.d.eventData;
+    console.log("🎵 Volume changed event:", eventData);
+    console.log(`  - Input: ${eventData.inputName}`);
+    console.log(`  - Volume Mul: ${eventData.inputVolumeMul}`);
+    console.log(`  - Volume dB: ${eventData.inputVolumeDb}`);
+    
+    // Update the specific slider for this input
+    const volumeSlider = document.querySelector(`[data-input-name="${eventData.inputName}"].volume-slider`);
+    if (volumeSlider) {
+      const newValue = eventData.inputVolumeMul * 100;
+      const currentValue = parseFloat(volumeSlider.value);
+      
+      console.log(`  - Current slider: ${currentValue}%`);
+      console.log(`  - New slider: ${newValue}%`);
+      
+      if (Math.abs(currentValue - newValue) > 0.1) {
+        volumeSlider.value = newValue;
+        console.log(`✅ Updated slider for ${eventData.inputName}: ${currentValue}% -> ${newValue}%`);
+      }
+      
+      // Update audio level indicator
+      const audioLevelFill = volumeSlider.parentElement.parentElement.querySelector('.audio-level-fill');
+      if (audioLevelFill) {
+        audioLevelFill.style.width = `${newValue}%`;
+      }
     }
   }
 }
