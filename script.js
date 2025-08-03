@@ -541,14 +541,14 @@ function handleObsMessage(msg) {
     
     console.log("Filtered audio sources:", audioSources);
     
-    // If this is a UI update request and we have audio sources, get their settings
-    const isUIUpdate = msg.d.requestId?.includes("update-ui");
-    if (isUIUpdate && audioSources.length > 0) {
-      console.log("🔄 UI update requested - getting audio source settings");
-      audioSources.forEach(source => {
-        getInputSettings(source.inputName);
-      });
-    }
+         // If this is a UI update request, update the existing controls with the fresh data
+     const isUIUpdate = msg.d.requestId?.includes("update-ui");
+     const isMuteStatusUpdate = msg.d.requestId?.includes("mute-status-update");
+     
+     if (isUIUpdate || isMuteStatusUpdate) {
+       console.log("🔄 UI update requested - updating existing controls with fresh data");
+       updateExistingAudioControls(audioSources);
+     }
     
     const audioContainer = document.getElementById('audio-sources');
     
@@ -618,9 +618,20 @@ function handleObsMessage(msg) {
     console.log("Mute toggle response:", msg.d);
     if (!msg.d.error) {
       console.log("✅ Mute toggle successful");
-      // Update the specific button text without full refresh
-      console.log("🔄 Triggering audio source UI update after mute toggle");
-      updateAudioSourceUI();
+      // Request fresh input list to get updated mute status
+      console.log("🔄 Requesting fresh input list after mute toggle");
+      setTimeout(() => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          const request = {
+            op: 6,
+            d: {
+              requestType: "GetInputList",
+              requestId: "mute-status-update-" + Date.now()
+            }
+          };
+          socket.send(JSON.stringify(request));
+        }
+      }, 100);
     } else {
       console.error("❌ Mute toggle failed:", msg.d.error);
     }
@@ -640,36 +651,7 @@ function handleObsMessage(msg) {
   // Handle input settings response (for mute status updates)
   if (msg.op === 7 && msg.d.requestType === "GetInputSettings") {
     console.log("Input settings response:", msg.d);
-    if (!msg.d.error && msg.d.responseData) {
-      const inputName = msg.d.responseData.inputName;
-      const inputSettings = msg.d.responseData.inputSettings;
-      
-      // Look for mute setting
-      const isMuted = inputSettings?.input_muted === true;
-      
-      if (isMuted !== undefined) {
-        console.log(`🔧 Updating mute setting for ${inputName}:`, { muted: isMuted });
-        
-        // Update the specific audio source
-        const muteBtn = document.querySelector(`.mute-btn[data-input-name="${inputName}"]`);
-        if (muteBtn) {
-          // Update button text and class
-          muteBtn.textContent = isMuted ? 'Unmute' : 'Mute';
-          muteBtn.className = `btn btn-sm audio-btn mute-btn ${isMuted ? 'muted' : ''}`;
-          
-          // Update mute status indicator
-          const muteStatus = muteBtn.parentElement.querySelector('.mute-status');
-          if (muteStatus) {
-            const muteStatusText = muteStatus.querySelector('.mute-status-text');
-            if (muteStatusText) {
-              muteStatusText.textContent = isMuted ? 'MUTED' : 'LIVE';
-              console.log(`🔇 Updated mute status for ${inputName}: ${isMuted ? 'MUTED' : 'LIVE'}`);
-            }
-            muteStatus.className = `mute-status me-2 ${isMuted ? 'muted' : 'unmuted'}`;
-          }
-        }
-      }
-    }
+    // We're not using this response anymore since GetInputList includes the mute status
   }
 
   // Handle volume change events from OBS
