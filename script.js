@@ -363,11 +363,24 @@ function createAudioSourceElement(source) {
   const audioDiv = document.createElement('div');
   audioDiv.className = 'audio-source d-flex align-items-center justify-content-between';
   
+  // Convert volume multiplier to linear percentage using OBS's -60 to 0 dB scale
+  let sliderValue;
+  if (source.inputVolumeMul === 0) {
+    sliderValue = 0; // Mute
+  } else if (source.inputVolumeMul === 1) {
+    sliderValue = 100; // Full volume (0 dB)
+  } else {
+    // Convert multiplier to dB: dB = 20 * log10(multiplier)
+    const db = 20 * Math.log10(source.inputVolumeMul);
+    // Convert dB to percentage: 0% = -60 dB, 100% = 0 dB
+    sliderValue = ((db + 60) / 60) * 100;
+  }
+  
   audioDiv.innerHTML = `
     <div class="audio-info d-flex align-items-center">
       <span class="audio-name me-3">${source.inputName}</span>
       <div class="audio-level">
-        <div class="audio-level-fill" style="width: ${source.inputVolumeMul * 100}%"></div>
+        <div class="audio-level-fill" style="width: ${sliderValue}%"></div>
       </div>
     </div>
     <div class="audio-controls d-flex align-items-center">
@@ -376,7 +389,7 @@ function createAudioSourceElement(source) {
         ${source.inputMuted ? 'Unmute' : 'Mute'}
       </button>
       <input type="range" class="volume-slider ms-2" min="0" max="100" 
-             value="${source.inputVolumeMul * 100}"
+             value="${sliderValue}"
              data-input-name="${source.inputName}">
     </div>
   `;
