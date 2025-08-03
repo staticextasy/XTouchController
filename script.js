@@ -449,14 +449,16 @@ function createAudioSourceElement(source) {
     setAudioVolume(source.inputName, e.target.value);
   });
   
-  // Add dB value display on slider interaction
-  volumeSlider.addEventListener('input', (e) => {
-    const volumeValue = parseFloat(e.target.value);
-    // Convert linear percentage to dB: 0% = -60 dB, 100% = 0 dB
-    const db = (volumeValue / 100) * 60 - 60;
-    dbValue.textContent = `${db.toFixed(1)} dB`;
-    dbValue.classList.add('show');
-  });
+     // Add dB value display on slider interaction
+   volumeSlider.addEventListener('input', (e) => {
+     const volumeValue = parseFloat(e.target.value);
+     // Convert slider percentage to OBS dB using the inverse power curve
+     const normalizedSlider = volumeValue / 100; // 0 to 1 range
+     const normalizedObsDb = Math.pow(normalizedSlider, 1/1.5); // Inverse power curve
+     const obsDb = normalizedObsDb * 60 - 60; // Convert to -60 to 0 dB range
+     dbValue.textContent = `${obsDb.toFixed(1)} dB`;
+     dbValue.classList.add('show');
+   });
   
   volumeSlider.addEventListener('mousedown', () => {
     dbValue.classList.add('show');
@@ -702,11 +704,17 @@ async function connect() {
   updateConnectionStatus("Connecting");
   socket = new WebSocket(`ws://${obsIP}:4455`);
 
-  socket.onopen = () => {
-    console.log("WebSocket opened");
-    updateStatus("Connected! Authenticating...", "connecting");
-    updateConnectionStatus("Connected");
-  };
+     socket.onopen = () => {
+     console.log("WebSocket opened");
+     updateStatus("Connected! Authenticating...", "connecting");
+     updateConnectionStatus("Connected");
+     
+     // Update button state
+     const reconnectBtn = document.getElementById('reconnect-btn');
+     const disconnectBtn = document.getElementById('disconnect-btn');
+     if (reconnectBtn) reconnectBtn.disabled = true;
+     if (disconnectBtn) disconnectBtn.disabled = false;
+   };
 
   socket.onmessage = async (event) => {
     console.log("Received message:", event.data);
@@ -829,15 +837,23 @@ async function connect() {
   }, 5000); // 5 second timeout
 }
 
-// Initialize the application
-document.addEventListener('DOMContentLoaded', function() {
-  // Load version information
-  loadVersionInfo();
-  
-  // Start the connection
-  connect();
-  initThemeSwitcher(); // Initialize theme switcher
-});
+ // Initialize the application
+ document.addEventListener('DOMContentLoaded', function() {
+   // Load version information
+   loadVersionInfo();
+   
+   // Initialize theme switcher
+   initThemeSwitcher();
+   
+   // Set initial button states
+   const reconnectBtn = document.getElementById('reconnect-btn');
+   const disconnectBtn = document.getElementById('disconnect-btn');
+   if (reconnectBtn) reconnectBtn.disabled = false;
+   if (disconnectBtn) disconnectBtn.disabled = true;
+   
+   // Start the connection
+   connect();
+ });
 
 // Load version information from package.json
 async function loadVersionInfo() {
@@ -880,35 +896,44 @@ function updateExistingAudioControls(audioSources) {
       muteBtn.textContent = source.inputMuted ? 'Unmute' : 'Mute';
       muteBtn.className = `btn btn-sm audio-btn mute-btn ${source.inputMuted ? 'muted' : ''}`;
       
-      // Update mute status indicator
-      const muteStatus = muteBtn.parentElement.querySelector('.mute-status');
-      if (muteStatus) {
-        const muteStatusText = muteStatus.querySelector('.mute-status-text');
-        if (muteStatusText) {
-          muteStatusText.textContent = source.inputMuted ? 'MUTED' : 'LIVE';
-        }
-        muteStatus.className = `mute-status me-2 ${source.inputMuted ? 'muted' : 'unmuted'}`;
-      }
+             // Update mute status indicator
+       const muteStatus = muteBtn.parentElement.querySelector('.mute-status');
+       if (muteStatus) {
+         const muteStatusText = muteStatus.querySelector('.mute-status-text');
+         if (muteStatusText) {
+           // Handle undefined inputMuted
+           const isMuted = source.inputMuted === true;
+           muteStatusText.textContent = isMuted ? 'MUTED' : 'LIVE';
+         }
+         muteStatus.className = `mute-status me-2 ${source.inputMuted === true ? 'muted' : 'unmuted'}`;
+       }
       
              // Update volume slider value (but don't trigger change event)
        const volumeSlider = muteBtn.parentElement.querySelector('.volume-slider');
        if (volumeSlider) {
          const currentValue = parseFloat(volumeSlider.value);
          
-         // Convert volume multiplier to linear percentage using the corrected scaling
-         let newValue;
-         let calculatedDb;
-         if (source.inputVolumeMul === 0) {
-           newValue = 0; // Mute
-           calculatedDb = -60;
-         } else if (source.inputVolumeMul === 1) {
-           newValue = 100; // Full volume (0 dB)
-           calculatedDb = 0;
-         } else {
-           // Convert multiplier to dB: dB = 20 * log10(multiplier)
-           calculatedDb = 20 * Math.log10(source.inputVolumeMul);
-           
-                       // Apply the same human-friendly mapping as in the event handler
+                   // Convert volume multiplier to linear percentage using the corrected scaling
+          let newValue;
+          let calculatedDb;
+          
+          // Handle undefined or null inputVolumeMul
+          if (source.inputVolumeMul === undefined || source.inputVolumeMul === null) {
+            console.warn(`⚠️ inputVolumeMul is undefined for ${source.inputName}, skipping update`);
+            return;
+          }
+          
+          if (source.inputVolumeMul === 0) {
+            newValue = 0; // Mute
+            calculatedDb = -60;
+          } else if (source.inputVolumeMul === 1) {
+            newValue = 100; // Full volume (0 dB)
+            calculatedDb = 0;
+          } else {
+            // Convert multiplier to dB: dB = 20 * log10(multiplier)
+            calculatedDb = 20 * Math.log10(source.inputVolumeMul);
+            
+            // Apply the same human-friendly mapping as in the event handler
             // Convert OBS's dB to a more intuitive percentage
             
             // Use the same power curve for consistency
@@ -917,9 +942,9 @@ function updateExistingAudioControls(audioSources) {
             
             // Clamp to valid range
             newValue = Math.max(0, Math.min(100, newValue));
-         }
-         
-                   console.log(`Checking ${source.inputName}: current=${currentValue}%, new=${newValue.toFixed(2)}%, diff=${Math.abs(currentValue - newValue).toFixed(2)}`);
+          }
+          
+          console.log(`Checking ${source.inputName}: current=${currentValue}%, new=${newValue.toFixed(2)}%, diff=${Math.abs(currentValue - newValue).toFixed(2)}`);
           console.log(`  - OBS volume mul: ${source.inputVolumeMul.toFixed(6)}`);
           console.log(`  - OBS calculated dB: ${calculatedDb.toFixed(2)} dB`);
           console.log(`  - Power curve mapping: normalized=${((calculatedDb + 60) / 60).toFixed(3)} -> slider=${newValue.toFixed(1)}%`);
@@ -971,9 +996,54 @@ function forceSyncWithOBS() {
   }
 }
 
-// Global functions for debugging (accessible from browser console)
-window.testObsConnection = testObsConnection;
-window.getAudioSources = getAudioSources;
-window.getAllInputs = getAllInputs;
-window.refreshAudioSources = refreshAudioSources;
-window.forceSyncWithOBS = forceSyncWithOBS; 
+ // Connection management functions
+ function disconnectFromOBS() {
+   console.log("🔌 Disconnecting from OBS...");
+   if (socket) {
+     socket.close();
+     socket = null;
+   }
+   updateConnectionStatus("Disconnected");
+   updateStatus("Disconnected from OBS", "error");
+   
+   // Clear all UI elements
+   const sceneContainer = document.getElementById("scene-buttons");
+   const audioContainer = document.getElementById('audio-sources');
+   sceneContainer.innerHTML = '<div class="alert alert-warning">Disconnected from OBS</div>';
+   audioContainer.innerHTML = '<div class="alert alert-warning">Disconnected from OBS</div>';
+   
+   // Reset status indicators
+   updateStreamStatus('Inactive');
+   updateRecordingStatus('Inactive');
+   updateFPSStatus(0);
+   
+   // Update button state
+   const reconnectBtn = document.getElementById('reconnect-btn');
+   const disconnectBtn = document.getElementById('disconnect-btn');
+   if (reconnectBtn) reconnectBtn.disabled = false;
+   if (disconnectBtn) disconnectBtn.disabled = true;
+ }
+
+ function reconnectToOBS() {
+   console.log("🔌 Reconnecting to OBS...");
+   updateStatus("Reconnecting to OBS...", "connecting");
+   updateConnectionStatus("Connecting");
+   
+   // Update button state
+   const reconnectBtn = document.getElementById('reconnect-btn');
+   const disconnectBtn = document.getElementById('disconnect-btn');
+   if (reconnectBtn) reconnectBtn.disabled = true;
+   if (disconnectBtn) disconnectBtn.disabled = false;
+   
+   // Start connection
+   connect();
+ }
+
+ // Global functions for debugging (accessible from browser console)
+ window.testObsConnection = testObsConnection;
+ window.getAudioSources = getAudioSources;
+ window.getAllInputs = getAllInputs;
+ window.refreshAudioSources = refreshAudioSources;
+ window.forceSyncWithOBS = forceSyncWithOBS;
+ window.disconnectFromOBS = disconnectFromOBS;
+ window.reconnectToOBS = reconnectToOBS; 
