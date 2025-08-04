@@ -405,6 +405,19 @@ function refreshChangelog() {
 // Local changelog content for offline viewing
 const localChangelog = [
   {
+    version: "1.1.30",
+    date: "2024-12-19",
+    title: "Mobile QR Scanner & Security Fixes",
+    changes: [
+      "🔧 Fixed QR scanner not opening on mobile devices",
+      "🔒 Fixed secure connection failed error on changelog page",
+      "📱 Enhanced mobile touch event handling for QR scanner",
+      "🔧 Improved server configuration for mobile access",
+      "📱 Added debug logging for mobile QR scanner",
+      "🔒 Disabled HSTS to prevent HTTPS redirects on mobile"
+    ]
+  },
+  {
     version: "1.1.29",
     date: "2024-12-19",
     title: "Critical Mobile Fixes",
@@ -428,19 +441,6 @@ const localChangelog = [
       "📱 Enhanced mobile touch handling and double-tap zoom prevention",
       "🔧 Updated version management for better tracking",
       "📱 Better mobile-specific CSS and JavaScript optimizations"
-    ]
-  },
-  {
-    version: "1.1.27",
-    date: "2024-12-19",
-    title: "Code Cleanup & Mobile Improvements",
-    changes: [
-      "🧹 Removed unnecessary console logs and debug functions",
-      "📱 Enhanced mobile touch interactions and button sizes",
-      "🔧 Fixed secure connection error with better CORS and headers",
-      "📱 Added mobile-specific optimizations and CSS",
-      "📖 Created mobile access guide for users",
-      "🔧 Enhanced server configuration for mobile compatibility"
     ]
   }
 ];

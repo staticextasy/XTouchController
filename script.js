@@ -1080,33 +1080,60 @@ function initQRScanner() {
   const qrManualBtn = document.getElementById('qr-manual-btn');
   
   if (qrScanBtn) {
+    // Remove existing listeners to prevent duplicates
+    qrScanBtn.removeEventListener('click', openQRScanner);
+    qrScanBtn.removeEventListener('touchstart', handleQRScanTouch);
+    qrScanBtn.removeEventListener('touchend', handleQRScanTouch);
+    
+    // Add click listener
     qrScanBtn.addEventListener('click', openQRScanner);
-    qrScanBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      openQRScanner();
-    }, { passive: false });
+    
+    // Add touch listeners for mobile
+    qrScanBtn.addEventListener('touchstart', handleQRScanTouch, { passive: false });
+    qrScanBtn.addEventListener('touchend', handleQRScanTouch, { passive: false });
   }
   
   if (qrManualBtn) {
-    qrManualBtn.addEventListener('click', () => {
-      const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
-      if (modal) {
-        modal.hide();
-      }
-      document.getElementById('obs-ip').focus();
-    });
-    qrManualBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
-      if (modal) {
-        modal.hide();
-      }
-      document.getElementById('obs-ip').focus();
-    }, { passive: false });
+    // Remove existing listeners
+    qrManualBtn.removeEventListener('click', handleQRManualClick);
+    qrManualBtn.removeEventListener('touchstart', handleQRManualTouch);
+    qrManualBtn.removeEventListener('touchend', handleQRManualTouch);
+    
+    // Add click listener
+    qrManualBtn.addEventListener('click', handleQRManualClick);
+    
+    // Add touch listeners for mobile
+    qrManualBtn.addEventListener('touchstart', handleQRManualTouch, { passive: false });
+    qrManualBtn.addEventListener('touchend', handleQRManualTouch, { passive: false });
   }
 }
 
+function handleQRScanTouch(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  openQRScanner();
+}
+
+function handleQRManualClick() {
+  const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
+  if (modal) {
+    modal.hide();
+  }
+  document.getElementById('obs-ip').focus();
+}
+
+function handleQRManualTouch(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
+  if (modal) {
+    modal.hide();
+  }
+  document.getElementById('obs-ip').focus();
+}
+
 function openQRScanner() {
+  console.log('Opening QR scanner...'); // Debug log
   const modal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
   modal.show();
   
@@ -1405,6 +1432,17 @@ function initMobileOptimizations() {
         }, 150);
       }, { passive: false });
     });
+    
+    // Ensure QR scanner button works on mobile
+    const qrScanBtn = document.getElementById('qr-scan-btn');
+    if (qrScanBtn) {
+      qrScanBtn.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('QR scan button touched on mobile'); // Debug log
+        openQRScanner();
+      }, { passive: false });
+    }
   }
 }
 
