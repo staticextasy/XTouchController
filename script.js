@@ -12,6 +12,7 @@ let currentFPS = 0;
 let statsInterval = null;
 let audioSyncInterval = null;
 let muteRequests = new Map(); // Use module-level variable instead of window
+let muteOperationInProgress = false; // Flag to prevent interference with user mute operations
 
 // Theme switcher functionality
 function initThemeSwitcher() {
@@ -223,6 +224,10 @@ async function toggleAudioMute(inputName) {
     return;
   }
   
+  // Set flag to prevent periodic updates from interfering
+  muteOperationInProgress = true;
+  console.log(`🔒 Mute operation in progress for: ${inputName}`);
+  
   const request = {
     op: 6,
     d: {
@@ -240,6 +245,7 @@ async function toggleAudioMute(inputName) {
     console.log("Mute toggle request sent successfully");
   } catch (error) {
     console.error("Failed to send mute toggle request:", error);
+    muteOperationInProgress = false; // Reset flag on error
   }
 }
 
@@ -658,9 +664,15 @@ function handleObsMessage(msg) {
             getInputMute(source.inputName);
           });
         }
+        // Reset the flag after a delay to allow the GetInputMute responses to come back
+        setTimeout(() => {
+          muteOperationInProgress = false;
+          console.log("🔓 Mute operation completed, periodic updates resumed");
+        }, 500);
       }, 100);
     } else {
       console.error("❌ Mute toggle failed:", msg.d.error);
+      muteOperationInProgress = false; // Reset flag on error
     }
   }
 
@@ -1022,6 +1034,12 @@ async function updateAudioSourceUI() {
 function updateExistingAudioControls(audioSources) {
   console.log("Updating existing audio controls with:", audioSources);
   console.log(`🔍 muteRequests before updateExistingAudioControls: size=${muteRequests.size}, keys=${Array.from(muteRequests.keys())}`);
+  
+  // Skip mute status updates if a user-initiated mute operation is in progress
+  if (muteOperationInProgress) {
+    console.log("🔒 Skipping periodic mute status updates - user operation in progress");
+    return;
+  }
   
   // Since GetInputList doesn't provide mute/volume status, we need to request it for each source
   audioSources.forEach(source => {
