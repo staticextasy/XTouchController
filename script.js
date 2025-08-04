@@ -76,10 +76,21 @@ function setTheme(theme) {
   localStorage.setItem('obs-theme', theme);
   updateActiveThemeButton(theme);
   
-  // Re-apply for mobile devices
+  // Re-apply for mobile devices with multiple attempts
   setTimeout(() => {
     document.documentElement.setAttribute('data-theme', theme);
-  }, 100);
+    updateActiveThemeButton(theme);
+  }, 50);
+  
+  setTimeout(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    updateActiveThemeButton(theme);
+  }, 200);
+  
+  setTimeout(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    updateActiveThemeButton(theme);
+  }, 500);
 }
 
 function updateActiveThemeButton(activeTheme) {
@@ -1070,6 +1081,10 @@ function initQRScanner() {
   
   if (qrScanBtn) {
     qrScanBtn.addEventListener('click', openQRScanner);
+    qrScanBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      openQRScanner();
+    }, { passive: false });
   }
   
   if (qrManualBtn) {
@@ -1080,6 +1095,14 @@ function initQRScanner() {
       }
       document.getElementById('obs-ip').focus();
     });
+    qrManualBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
+      if (modal) {
+        modal.hide();
+      }
+      document.getElementById('obs-ip').focus();
+    }, { passive: false });
   }
 }
 
@@ -1353,7 +1376,7 @@ function initMobileOptimizations() {
       }, { passive: false });
     });
     
-    // Force theme application for mobile
+    // Force theme application for mobile with multiple attempts
     setTimeout(() => {
       forceThemeApplication();
     }, 100);
@@ -1361,6 +1384,27 @@ function initMobileOptimizations() {
     setTimeout(() => {
       forceThemeApplication();
     }, 500);
+    
+    setTimeout(() => {
+      forceThemeApplication();
+    }, 1000);
+    
+    // Add specific mobile event listeners for theme buttons
+    const themeBtns = document.querySelectorAll('.theme-btn');
+    themeBtns.forEach(btn => {
+      btn.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const theme = this.getAttribute('data-theme');
+        setTheme(theme);
+        
+        // Add visual feedback
+        this.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          this.style.transform = '';
+        }, 150);
+      }, { passive: false });
+    });
   }
 }
 

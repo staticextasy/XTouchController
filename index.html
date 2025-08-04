@@ -194,7 +194,7 @@
   </footer>
 
   <!-- QR Code Scanner Modal -->
-  <div class="modal fade" id="qrScannerModal" tabindex="-1" aria-labelledby="qrScannerModalLabel" aria-hidden="true">
+  <div class="modal fade" id="qrScannerModal" tabindex="-1" aria-labelledby="qrScannerModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
@@ -208,7 +208,7 @@
             <p class="text-muted">Point your camera at a QR code with the format: <code>obsws://localhost:4455/SERVER-PASSWORD</code></p>
           </div>
           <div class="qr-scanner-container">
-            <video id="qr-video" class="w-100" autoplay playsinline></video>
+            <video id="qr-video" class="w-100" autoplay playsinline muted></video>
             <div class="qr-overlay">
               <div class="qr-scan-area"></div>
             </div>
@@ -221,7 +221,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary" id="qr-manual-btn">
+          <button type="button" class="btn btn-primary" id="qr-manual-btn" style="display: none;">
             <i class="bi bi-keyboard"></i> Enter Manually
           </button>
         </div>

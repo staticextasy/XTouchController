@@ -69,7 +69,7 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    version: '1.1.28',
+    version: '1.1.29',
     name: 'X Touch Controller'
   });
 });

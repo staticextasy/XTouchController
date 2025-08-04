@@ -405,6 +405,19 @@ function refreshChangelog() {
 // Local changelog content for offline viewing
 const localChangelog = [
   {
+    version: "1.1.29",
+    date: "2024-12-19",
+    title: "Critical Mobile Fixes",
+    changes: [
+      "🔧 Fixed QR scanner not working on mobile devices",
+      "🎨 Fixed theme switching not working on mobile",
+      "📱 Enhanced mobile touch event handling",
+      "🔧 Improved modal behavior for mobile devices",
+      "📱 Added multiple theme application attempts for mobile",
+      "🔧 Fixed mobile-specific event listeners"
+    ]
+  },
+  {
     version: "1.1.28",
     date: "2024-12-19",
     title: "Enhanced Mobile Experience & Bug Fixes",
@@ -428,19 +441,6 @@ const localChangelog = [
       "📱 Added mobile-specific optimizations and CSS",
       "📖 Created mobile access guide for users",
       "🔧 Enhanced server configuration for mobile compatibility"
-    ]
-  },
-  {
-    version: "1.1.26",
-    date: "2024-12-19",
-    title: "Enhanced Recording Controls & Bug Fixes",
-    changes: [
-      "🎬 Fixed recording button status updates with proper delays",
-      "🔗 Improved connection persistence through page navigation",
-      "📱 Enhanced QR scanner with better mobile camera access",
-      "🎨 Fixed theme loading issues on mobile devices",
-      "🔧 Prevented duplicate OBS connections",
-      "📝 Improved dark mode input field readability"
     ]
   }
 ];
