@@ -6,6 +6,7 @@ const compression = require('compression');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Security middleware with better mobile support
 app.use(helmet({
@@ -27,9 +28,10 @@ app.use(helmet({
 }));
 
 // Enable CORS for development and mobile access
+// Fixed: Remove conflicting credentials with wildcard origin
 app.use(cors({
-  origin: true,
-  credentials: true,
+  origin: true, // Allow all origins in development
+  credentials: false, // Disable credentials when using wildcard origin
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
@@ -37,38 +39,48 @@ app.use(cors({
 // Enable compression
 app.use(compression());
 
-// Add mobile-friendly headers and caching
+// Simplified mobile-friendly headers (removed redundant CORS headers)
 app.use((req, res, next) => {
-  // Prevent mobile browsers from trying to use HTTPS
+  // Security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   
-  // Allow mobile browsers to access the site
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  
   // Prevent HTTPS redirects
   res.setHeader('Strict-Transport-Security', 'max-age=0');
   
-  // Add caching headers for static assets
-  if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
-    res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
-    res.setHeader('ETag', `"${Date.now()}"`);
-  } else {
+  // Simplified caching strategy based on environment
+  if (NODE_ENV === 'development') {
+    // Development: No caching for easier debugging
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  } else {
+    // Production: Smart caching for static assets
+    if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+      // Static assets: 1 hour cache with version-based cache busting
+      res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour
+    } else {
+      // HTML and other files: No cache
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
   }
   
   next();
 });
 
-// Serve static files with caching
+// Serve static files with environment-appropriate caching
 app.use(express.static(path.join(__dirname, './'), {
   etag: true,
   lastModified: true,
-  maxAge: '1y'
+  maxAge: NODE_ENV === 'development' ? 0 : '1h', // 0 for dev, 1 hour for production
+  setHeaders: (res, path) => {
+    // Add version-based cache busting for JS and CSS files
+    if (path.match(/\.(js|css)$/)) {
+      const version = require('./package.json').version;
+      res.setHeader('ETag', `"${version}-${path}"`);
+    }
+  }
 }));
 
 // Routes
@@ -80,23 +92,27 @@ app.get('/changelog', (req, res) => {
   res.sendFile(path.join(__dirname, 'changelog.html'));
 });
 
-// Health check endpoint
+// Health check endpoint with version info for cache busting
 app.get('/health', (req, res) => {
+  const version = require('./package.json').version;
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    version: '1.1.30',
-    name: 'X Touch Controller'
+    version: version,
+    name: 'X Touch Controller',
+    environment: NODE_ENV
   });
 });
 
 // API endpoints for future features
 app.get('/api/status', (req, res) => {
+  const version = require('./package.json').version;
   res.json({
     server: 'running',
     uptime: process.uptime(),
     memory: process.memoryUsage(),
-    version: require('./package.json').version
+    version: version,
+    environment: NODE_ENV
   });
 });
 
@@ -201,7 +217,7 @@ app.get('/api/github/latest', async (req, res) => {
 app.use((err, req, res, next) => {
   res.status(500).json({ 
     error: 'Something went wrong!',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+    message: NODE_ENV === 'development' ? err.message : 'Internal server error'
   });
 });
 
@@ -214,7 +230,7 @@ app.use((req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🎮 X Touch Controller Server`);
   console.log(`📍 Server running on http://localhost:${PORT}`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌐 Environment: ${NODE_ENV}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`⏰ Started at: ${new Date().toLocaleString()}`);
   console.log(`🚀 Press Ctrl+C to stop the server`);
