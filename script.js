@@ -15,6 +15,14 @@ let muteRequests = new Map(); // Use module-level variable instead of window
 let muteOperationInProgress = false; // Flag to prevent interference with user mute operations
 let requestIdCounter = 0; // Counter for unique request IDs
 
+// Connection state management
+let connectionState = {
+  isConnected: false,
+  obsIP: "localhost",
+  password: "",
+  lastConnected: null
+};
+
 // Theme switcher functionality
 function initThemeSwitcher() {
   const themeBtns = document.querySelectorAll('.theme-btn');
@@ -183,23 +191,7 @@ async function getInputMute(inputName) {
   socket.send(JSON.stringify(request));
 }
 
-// Test function to check if OBS WebSocket is working
-async function testObsConnection() {
-  if (!socket || socket.readyState !== WebSocket.OPEN) {
-    console.error("WebSocket not connected for test!");
-    return;
-  }
-  
-  const request = {
-    op: 6,
-    d: {
-      requestType: "GetVersion",
-      requestId: "test-connection-" + Date.now()
-    }
-  };
-  
-  socket.send(JSON.stringify(request));
-}
+
 
 async function toggleAudioMute(inputName) {
   if (!socket || socket.readyState !== WebSocket.OPEN) {
@@ -717,6 +709,13 @@ async function connect() {
      updateStatus("Connected! Authenticating...", "connecting");
      updateConnectionStatus("Connected");
      
+     // Save connection state
+     connectionState.isConnected = true;
+     connectionState.obsIP = obsIP;
+     connectionState.password = password;
+     connectionState.lastConnected = new Date().toISOString();
+     localStorage.setItem('obsConnectionState', JSON.stringify(connectionState));
+     
      // Update button state
      const connectBtn = document.getElementById('connect-btn');
      const reconnectBtn = document.getElementById('reconnect-btn');
@@ -862,6 +861,9 @@ async function connect() {
      // Initialize theme switcher
      initThemeSwitcher();
      
+     // Restore connection state from localStorage
+     restoreConnectionState();
+     
      // Set up disconnect/reconnect button event listeners
      const reconnectBtn = document.getElementById('reconnect-btn');
      const disconnectBtn = document.getElementById('disconnect-btn');
@@ -958,26 +960,7 @@ function updateExistingAudioControls(audioSources) {
   });
 }
 
-// Function to manually refresh audio sources (for debugging)
-function refreshAudioSources() {
-  updateAudioSourceUI();
-}
 
-// Function to force immediate sync with OBS
-function forceSyncWithOBS() {
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    const request = {
-      op: 6,
-      d: {
-        requestType: "GetInputList",
-        requestId: "force-sync-" + Date.now()
-      }
-    };
-    socket.send(JSON.stringify(request));
-  } else {
-    console.error("WebSocket not connected!");
-  }
-}
 
    // Connection management functions
   function disconnectFromOBS() {
@@ -995,6 +978,12 @@ function forceSyncWithOBS() {
       socket.close();
       socket = null;
     }
+    
+    // Clear connection state
+    connectionState.isConnected = false;
+    connectionState.lastConnected = null;
+    localStorage.removeItem('obsConnectionState');
+    
     updateConnectionStatus("Disconnected");
     updateStatus("Disconnected from OBS", "error");
     
@@ -1040,12 +1029,53 @@ function forceSyncWithOBS() {
    connect();
  }
 
+// Function to restore connection state from localStorage
+function restoreConnectionState() {
+  const savedState = localStorage.getItem('obsConnectionState');
+  if (savedState) {
+    try {
+      const state = JSON.parse(savedState);
+      connectionState = state;
+      
+      // Restore connection fields if they exist
+      const obsIpField = document.getElementById('obs-ip');
+      const obsPasswordField = document.getElementById('obs-password');
+      
+      if (obsIpField && state.obsIP) {
+        obsIpField.value = state.obsIP;
+        obsIP = state.obsIP;
+      }
+      
+      if (obsPasswordField && state.password) {
+        obsPasswordField.value = state.password;
+        password = state.password;
+      }
+      
+      // If we were previously connected, show reconnection option
+      if (state.isConnected && state.lastConnected) {
+        const lastConnected = new Date(state.lastConnected);
+        const timeSinceConnection = Date.now() - lastConnected.getTime();
+        
+        // If connection was within the last 5 minutes, offer to reconnect
+        if (timeSinceConnection < 5 * 60 * 1000) {
+          console.log('Previous connection found, offering reconnection...');
+          // Don't auto-reconnect, just update UI to show reconnection is available
+          const reconnectBtn = document.getElementById('reconnect-btn');
+          if (reconnectBtn) {
+            reconnectBtn.disabled = false;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to restore connection state:', error);
+      localStorage.removeItem('obsConnectionState');
+    }
+  }
+}
+
    // Global functions for debugging (accessible from browser console)
-  window.testObsConnection = testObsConnection;
   window.getAudioSources = getAudioSources;
   window.getAllInputs = getAllInputs;
-  window.refreshAudioSources = refreshAudioSources;
-  window.forceSyncWithOBS = forceSyncWithOBS;
   window.disconnectFromOBS = disconnectFromOBS;
   window.reconnectToOBS = reconnectToOBS;
   window.checkMuteRequests = () => {

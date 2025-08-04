@@ -321,29 +321,4 @@ function refreshChangelog() {
   loadChangelog();
 }
 
-// Check for updates
-async function checkForUpdates() {
-  try {
-    const response = await fetch('/api/github/latest');
-    
-    if (!response.ok) {
-      return null;
-    }
-    
-    const latestRelease = await response.json();
-    const latestVersion = latestRelease.tag_name.replace('v', '');
-    
-    if (latestVersion !== currentVersion) {
-      return {
-        version: latestVersion,
-        url: latestRelease.html_url,
-        body: latestRelease.body
-      };
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Failed to check for updates:', error);
-    return null;
-  }
-} 
+ 

@@ -61,7 +61,7 @@
   --primary-color: #6366f1;
   --secondary-color: #8b5cf6;
   --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  --text-color: #f3f4f6;
+  --text-color: #ffffff;
   --bg-color: #000000;
   --card-bg: rgba(17, 24, 39, 0.95);
   --border-color: #374151;
@@ -86,7 +86,7 @@
 
 [data-theme="darkmode"] .status-value {
   background: rgba(55, 65, 81, 0.8);
-  color: #f3f4f6;
+  color: #ffffff;
 }
 
 [data-theme="darkmode"] .audio-source {
@@ -97,7 +97,7 @@
 [data-theme="darkmode"] .alert {
   background: rgba(17, 24, 39, 0.95);
   border-color: #374151;
-  color: #f3f4f6;
+  color: #ffffff;
 }
 
 [data-theme="darkmode"] .main-container {
@@ -106,7 +106,7 @@
 }
 
 [data-theme="darkmode"] .text-muted {
-  color: #9ca3af !important;
+  color: #d1d5db !important;
 }
 
 [data-theme="darkmode"] .audio-level {
