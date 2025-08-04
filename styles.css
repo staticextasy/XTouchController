@@ -101,12 +101,12 @@
 }
 
 [data-theme="darkmode"] .main-container {
-  background: rgba(17, 24, 39, 0.95);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  background: var(--bg-color);
+  color: var(--text-color);
 }
 
 [data-theme="darkmode"] .text-muted {
-  color: #d1d5db !important;
+  color: #9ca3af !important;
 }
 
 [data-theme="darkmode"] .audio-level {
@@ -117,17 +117,16 @@
   background: rgba(55, 65, 81, 0.8);
 }
 
-/* Dark mode form input styling */
 [data-theme="darkmode"] .form-control,
 [data-theme="darkmode"] .form-select {
-  background-color: rgba(55, 65, 81, 0.8);
+  background: rgba(55, 65, 81, 0.8);
   border-color: #4b5563;
   color: #ffffff;
 }
 
 [data-theme="darkmode"] .form-control:focus,
 [data-theme="darkmode"] .form-select:focus {
-  background-color: rgba(55, 65, 81, 0.9);
+  background: rgba(55, 65, 81, 0.9);
   border-color: #6366f1;
   color: #ffffff;
   box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
@@ -142,16 +141,15 @@
 }
 
 [data-theme="darkmode"] .form-text {
-  color: #d1d5db;
+  color: #9ca3af;
 }
 
-/* Dark mode text readability improvements */
 [data-theme="darkmode"] .card-title {
-  color: #ffffff !important;
+  color: #ffffff;
 }
 
 [data-theme="darkmode"] .text-muted {
-  color: #d1d5db !important;
+  color: #9ca3af !important;
 }
 
 [data-theme="darkmode"] .alert {
@@ -162,25 +160,25 @@
 
 [data-theme="darkmode"] .alert-info {
   background: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.3);
+  border-color: #3b82f6;
   color: #93c5fd;
 }
 
 [data-theme="darkmode"] .alert-warning {
   background: rgba(245, 158, 11, 0.1);
-  border-color: rgba(245, 158, 11, 0.3);
+  border-color: #f59e0b;
   color: #fcd34d;
 }
 
 [data-theme="darkmode"] .alert-danger {
   background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
+  border-color: #ef4444;
   color: #fca5a5;
 }
 
 [data-theme="darkmode"] .alert-success {
   background: rgba(34, 197, 94, 0.1);
-  border-color: rgba(34, 197, 94, 0.3);
+  border-color: #22c55e;
   color: #86efac;
 }
 
@@ -190,18 +188,18 @@
 }
 
 [data-theme="darkmode"] .btn-outline-primary:hover {
-  background-color: #6366f1;
+  background: #6366f1;
   border-color: #6366f1;
   color: #ffffff;
 }
 
 [data-theme="darkmode"] .btn-outline-secondary {
-  color: #9ca3af;
+  color: #6b7280;
   border-color: #6b7280;
 }
 
 [data-theme="darkmode"] .btn-outline-secondary:hover {
-  background-color: #6b7280;
+  background: #6b7280;
   border-color: #6b7280;
   color: #ffffff;
 }
@@ -212,24 +210,25 @@
 }
 
 [data-theme="darkmode"] .btn-outline-danger:hover {
-  background-color: #ef4444;
+  background: #ef4444;
   border-color: #ef4444;
   color: #ffffff;
 }
 
 [data-theme="darkmode"] .version-info {
-  color: #d1d5db !important;
+  color: #9ca3af;
 }
 
 [data-theme="darkmode"] .version-info a {
-  color: #6366f1 !important;
+  color: #6366f1;
 }
 
 [data-theme="darkmode"] .version-info a:hover {
-  color: #8b5cf6 !important;
+  color: #818cf8;
 }
 
 [data-theme="darkmode"] .badge {
+  background: rgba(55, 65, 81, 0.8);
   color: #ffffff;
 }
 
@@ -254,6 +253,68 @@
 
 [data-theme="darkmode"] .btn-close {
   filter: invert(1);
+}
+
+/* Additional dark mode styles for changelog and general text */
+[data-theme="darkmode"] h1,
+[data-theme="darkmode"] h2,
+[data-theme="darkmode"] h3,
+[data-theme="darkmode"] h4,
+[data-theme="darkmode"] h5,
+[data-theme="darkmode"] h6 {
+  color: #ffffff;
+}
+
+[data-theme="darkmode"] p {
+  color: #e5e7eb;
+}
+
+[data-theme="darkmode"] li {
+  color: #e5e7eb;
+}
+
+[data-theme="darkmode"] code {
+  background: rgba(55, 65, 81, 0.8);
+  color: #f3f4f6;
+  border: 1px solid #4b5563;
+}
+
+[data-theme="darkmode"] pre {
+  background: rgba(17, 24, 39, 0.95);
+  border: 1px solid #374151;
+  color: #f3f4f6;
+}
+
+[data-theme="darkmode"] blockquote {
+  border-left-color: #6366f1;
+  color: #d1d5db;
+}
+
+[data-theme="darkmode"] table {
+  color: #e5e7eb;
+}
+
+[data-theme="darkmode"] th {
+  background: rgba(55, 65, 81, 0.8);
+  color: #ffffff;
+  border-color: #4b5563;
+}
+
+[data-theme="darkmode"] td {
+  border-color: #4b5563;
+}
+
+[data-theme="darkmode"] .nav-link {
+  color: #9ca3af;
+}
+
+[data-theme="darkmode"] .nav-link:hover {
+  color: #6366f1;
+}
+
+[data-theme="darkmode"] .nav-link.active {
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.1);
 }
 
 /* Global Styles */

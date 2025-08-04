@@ -402,4 +402,47 @@ function refreshChangelog() {
   loadChangelog();
 }
 
+// Local changelog content for offline viewing
+const localChangelog = [
+  {
+    version: "1.1.28",
+    date: "2024-12-19",
+    title: "Enhanced Mobile Experience & Bug Fixes",
+    changes: [
+      "🔧 Enhanced mobile theme switching with multiple re-application attempts",
+      "📱 Improved QR scanner with better camera access and fallback options",
+      "🎨 Comprehensive dark mode text readability improvements",
+      "📱 Enhanced mobile touch handling and double-tap zoom prevention",
+      "🔧 Updated version management for better tracking",
+      "📱 Better mobile-specific CSS and JavaScript optimizations"
+    ]
+  },
+  {
+    version: "1.1.27",
+    date: "2024-12-19",
+    title: "Code Cleanup & Mobile Improvements",
+    changes: [
+      "🧹 Removed unnecessary console logs and debug functions",
+      "📱 Enhanced mobile touch interactions and button sizes",
+      "🔧 Fixed secure connection error with better CORS and headers",
+      "📱 Added mobile-specific optimizations and CSS",
+      "📖 Created mobile access guide for users",
+      "🔧 Enhanced server configuration for mobile compatibility"
+    ]
+  },
+  {
+    version: "1.1.26",
+    date: "2024-12-19",
+    title: "Enhanced Recording Controls & Bug Fixes",
+    changes: [
+      "🎬 Fixed recording button status updates with proper delays",
+      "🔗 Improved connection persistence through page navigation",
+      "📱 Enhanced QR scanner with better mobile camera access",
+      "🎨 Fixed theme loading issues on mobile devices",
+      "🔧 Prevented duplicate OBS connections",
+      "📝 Improved dark mode input field readability"
+    ]
+  }
+];
+
  

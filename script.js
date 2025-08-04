@@ -1101,6 +1101,7 @@ async function startQRScanner() {
       throw new Error('Camera access not supported in this browser');
     }
     
+    // Try multiple camera configurations for mobile
     const constraints = {
       video: {
         facingMode: { ideal: 'environment' },
@@ -1110,10 +1111,14 @@ async function startQRScanner() {
       }
     };
     
+    let qrStream = null;
+    
+    // Try primary configuration
     try {
       qrStream = await navigator.mediaDevices.getUserMedia(constraints);
     } catch (fallbackError) {
-      const fallbackConstraints = {
+      // Try front camera
+      const frontCameraConstraints = {
         video: {
           facingMode: 'user',
           width: { ideal: 640, min: 320 },
@@ -1122,21 +1127,46 @@ async function startQRScanner() {
       };
       
       try {
-        qrStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+        qrStream = await navigator.mediaDevices.getUserMedia(frontCameraConstraints);
       } catch (secondFallbackError) {
-        qrStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // Try any available camera
+        try {
+          qrStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        } catch (thirdFallbackError) {
+          // Try with minimal constraints
+          qrStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+              width: { min: 320 }, 
+              height: { min: 240 } 
+            } 
+          });
+        }
       }
     }
     
     video.srcObject = qrStream;
     
+    // Wait for video to be ready with timeout
     await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Video loading timeout'));
+      }, 15000);
+      
       video.onloadedmetadata = () => {
+        clearTimeout(timeout);
         video.play().then(resolve).catch(reject);
       };
-      video.onerror = reject;
       
-      setTimeout(() => reject(new Error('Video loading timeout')), 10000);
+      video.onerror = (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      };
+      
+      // Also try oncanplay
+      video.oncanplay = () => {
+        clearTimeout(timeout);
+        resolve();
+      };
     });
     
     qrScanning = true;
@@ -1160,7 +1190,7 @@ async function startQRScanner() {
     } else if (error.message === 'Video loading timeout') {
       errorMessage += 'Camera took too long to start. Please try again.';
     } else {
-      errorMessage += 'Please check your camera permissions and try again.';
+      errorMessage += `Error: ${error.message}. Please check your camera permissions and try again.`;
     }
     
     status.innerHTML = `<i class="bi bi-exclamation-triangle"></i> ${errorMessage}`;
@@ -1260,13 +1290,35 @@ document.addEventListener('DOMContentLoaded', function() {
 function forceThemeApplication() {
   const savedTheme = localStorage.getItem('obs-theme') || 'ocean';
   
+  // Apply theme immediately
   document.documentElement.setAttribute('data-theme', savedTheme);
+  updateActiveThemeButton(savedTheme);
+  
+  // Force reflow
   document.documentElement.offsetHeight;
+  
+  // Re-apply with delays for mobile devices
+  setTimeout(() => {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateActiveThemeButton(savedTheme);
+  }, 50);
   
   setTimeout(() => {
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateActiveThemeButton(savedTheme);
-  }, 100);
+  }, 200);
+  
+  setTimeout(() => {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateActiveThemeButton(savedTheme);
+    
+    // Final verification and force update
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    if (currentTheme !== savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      updateActiveThemeButton(savedTheme);
+    }
+  }, 500);
 } 
 
 // Mobile-specific optimizations
@@ -1291,6 +1343,24 @@ function initMobileOptimizations() {
   // Add mobile-specific CSS class
   if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
     document.body.classList.add('mobile-device');
+    
+    // Add touch handlers to all interactive elements
+    const interactiveElements = document.querySelectorAll('button, input, select, textarea, .btn, .form-control, .volume-slider');
+    interactiveElements.forEach(element => {
+      element.addEventListener('touchstart', function(e) {
+        // Prevent double-tap zoom on interactive elements
+        e.preventDefault();
+      }, { passive: false });
+    });
+    
+    // Force theme application for mobile
+    setTimeout(() => {
+      forceThemeApplication();
+    }, 100);
+    
+    setTimeout(() => {
+      forceThemeApplication();
+    }, 500);
   }
 }
 
