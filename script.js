@@ -935,7 +935,7 @@ async function connect() {
 
   // Add connection timeout
   setTimeout(() => {
-    if (socket.readyState !== WebSocket.OPEN) {
+    if (socket && socket.readyState !== WebSocket.OPEN) {
       updateStatus("Connection timeout - check OBS WebSocket settings", "error");
       updateConnectionStatus("Timeout");
     }
@@ -988,6 +988,8 @@ async function loadVersionInfo() {
 // Function to update audio source UI without full refresh
 async function updateAudioSourceUI() {
   console.log("🔄 updateAudioSourceUI called - requesting input list for UI update");
+  console.log(`🔍 muteRequests before updateAudioSourceUI: size=${muteRequests.size}, keys=${Array.from(muteRequests.keys())}`);
+  
   // Get current audio sources to update button states
   const request = {
     op: 6,
@@ -1002,6 +1004,7 @@ async function updateAudioSourceUI() {
 // Function to update existing audio controls without recreating them
 function updateExistingAudioControls(audioSources) {
   console.log("Updating existing audio controls with:", audioSources);
+  console.log(`🔍 muteRequests before updateExistingAudioControls: size=${muteRequests.size}, keys=${Array.from(muteRequests.keys())}`);
   
   audioSources.forEach(source => {
     const muteBtn = document.querySelector(`.mute-btn[data-input-name="${source.inputName}"]`);
