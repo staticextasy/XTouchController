@@ -37,7 +37,7 @@ app.use(cors({
 // Enable compression
 app.use(compression());
 
-// Add mobile-friendly headers
+// Add mobile-friendly headers and caching
 app.use((req, res, next) => {
   // Prevent mobile browsers from trying to use HTTPS
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -53,11 +53,23 @@ app.use((req, res, next) => {
   // Prevent HTTPS redirects
   res.setHeader('Strict-Transport-Security', 'max-age=0');
   
+  // Add caching headers for static assets
+  if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
+    res.setHeader('ETag', `"${Date.now()}"`);
+  } else {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  }
+  
   next();
 });
 
-// Serve static files
-app.use(express.static(path.join(__dirname, './')));
+// Serve static files with caching
+app.use(express.static(path.join(__dirname, './'), {
+  etag: true,
+  lastModified: true,
+  maxAge: '1y'
+}));
 
 // Routes
 app.get('/', (req, res) => {
@@ -88,9 +100,34 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// GitHub API proxy endpoints
+// GitHub API proxy endpoints with rate limiting
+const githubRequestCache = new Map();
+const GITHUB_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+function getCachedResponse(cacheKey) {
+  const cached = githubRequestCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < GITHUB_CACHE_DURATION) {
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedResponse(cacheKey, data) {
+  githubRequestCache.set(cacheKey, {
+    data,
+    timestamp: Date.now()
+  });
+}
+
 app.get('/api/github/releases', async (req, res) => {
   try {
+    const cacheKey = 'github-releases';
+    const cached = getCachedResponse(cacheKey);
+    
+    if (cached) {
+      return res.json(cached);
+    }
+    
     const response = await fetch('https://api.github.com/repos/staticextasy/XTouchController/releases');
     
     if (!response.ok) {
@@ -98,6 +135,7 @@ app.get('/api/github/releases', async (req, res) => {
     }
     
     const releases = await response.json();
+    setCachedResponse(cacheKey, releases);
     res.json(releases);
   } catch (error) {
     res.status(500).json({ 
@@ -109,6 +147,13 @@ app.get('/api/github/releases', async (req, res) => {
 
 app.get('/api/github/commits', async (req, res) => {
   try {
+    const cacheKey = 'github-commits';
+    const cached = getCachedResponse(cacheKey);
+    
+    if (cached) {
+      return res.json(cached);
+    }
+    
     const response = await fetch('https://api.github.com/repos/staticextasy/XTouchController/commits?per_page=10');
     
     if (!response.ok) {
@@ -116,6 +161,7 @@ app.get('/api/github/commits', async (req, res) => {
     }
     
     const commits = await response.json();
+    setCachedResponse(cacheKey, commits);
     res.json(commits);
   } catch (error) {
     res.status(500).json({ 
@@ -127,6 +173,13 @@ app.get('/api/github/commits', async (req, res) => {
 
 app.get('/api/github/latest', async (req, res) => {
   try {
+    const cacheKey = 'github-latest';
+    const cached = getCachedResponse(cacheKey);
+    
+    if (cached) {
+      return res.json(cached);
+    }
+    
     const response = await fetch('https://api.github.com/repos/staticextasy/XTouchController/releases/latest');
     
     if (!response.ok) {
@@ -134,6 +187,7 @@ app.get('/api/github/latest', async (req, res) => {
     }
     
     const latestRelease = await response.json();
+    setCachedResponse(cacheKey, latestRelease);
     res.json(latestRelease);
   } catch (error) {
     res.status(500).json({ 

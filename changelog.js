@@ -1,42 +1,21 @@
 // Changelog functionality
 let currentVersion = '1.1.32';
 
-// Theme switcher functionality (copied from main script for changelog page)
+// Theme switcher functionality - OPTIMIZED (shared with main script)
 function initThemeSwitcher() {
-  const themeBtns = document.querySelectorAll('.theme-btn');
-  const savedTheme = localStorage.getItem('obs-theme') || 'ocean';
-  
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  updateActiveThemeButton(savedTheme);
-  
-  themeBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const theme = btn.getAttribute('data-theme');
-      setTheme(theme);
-    });
-    
-    btn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      const theme = btn.getAttribute('data-theme');
-      setTheme(theme);
-    }, { passive: false });
-  });
+  ThemeManager.init();
 }
 
 function setTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('obs-theme', theme);
-  updateActiveThemeButton(theme);
+  ThemeManager.setTheme(theme);
+}
+
+function applyTheme(theme) {
+  ThemeManager.applyTheme(theme);
 }
 
 function updateActiveThemeButton(activeTheme) {
-  const themeBtns = document.querySelectorAll('.theme-btn');
-  themeBtns.forEach(btn => {
-    btn.classList.remove('active');
-    if (btn.getAttribute('data-theme') === activeTheme) {
-      btn.classList.add('active');
-    }
-  });
+  ThemeManager.updateActiveThemeButton(activeTheme);
 }
 
 // Initialize changelog when page loads

@@ -15,6 +15,12 @@ let muteRequests = new Map();
 let muteOperationInProgress = false;
 let requestIdCounter = 0;
 
+// Performance optimizations
+let lastStatsRequest = 0;
+let lastAudioSyncRequest = 0;
+const STATS_DEBOUNCE_MS = 1000; // Minimum time between stats requests
+const AUDIO_SYNC_DEBOUNCE_MS = 2000; // Minimum time between audio sync requests
+
 // Connection state management
 let connectionState = {
   isConnected: false,
@@ -29,78 +35,21 @@ let reconnectAttempts = 0;
 let maxReconnectAttempts = 3;
 let reconnectInterval = null;
 
-// Theme switcher functionality
+// Theme switcher functionality - OPTIMIZED
 function initThemeSwitcher() {
-  const themeBtns = document.querySelectorAll('.theme-btn');
-  const savedTheme = localStorage.getItem('obs-theme') || 'ocean';
-  
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  updateActiveThemeButton(savedTheme);
-  
-  themeBtns.forEach(btn => {
-    btn.removeEventListener('click', handleThemeClick);
-    btn.removeEventListener('touchstart', handleThemeTouch);
-    btn.removeEventListener('touchend', handleThemeTouch);
-    
-    btn.addEventListener('click', handleThemeClick);
-    btn.addEventListener('touchstart', handleThemeTouch, { passive: false });
-    btn.addEventListener('touchend', handleThemeTouch, { passive: false });
-  });
-  
-  // Apply theme for mobile devices
-  forceThemeApplication();
-}
-
-function handleThemeClick(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  const theme = e.currentTarget.getAttribute('data-theme');
-  setTheme(theme);
-}
-
-function handleThemeTouch(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  const theme = e.currentTarget.getAttribute('data-theme');
-  setTheme(theme);
-  
-  // Add visual feedback for mobile
-  e.currentTarget.style.transform = 'scale(0.95)';
-  setTimeout(() => {
-    e.currentTarget.style.transform = '';
-  }, 150);
+  ThemeManager.init();
 }
 
 function setTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('obs-theme', theme);
-  updateActiveThemeButton(theme);
-  
-  // Re-apply for mobile devices with multiple attempts
-  setTimeout(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    updateActiveThemeButton(theme);
-  }, 50);
-  
-  setTimeout(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    updateActiveThemeButton(theme);
-  }, 200);
-  
-  setTimeout(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    updateActiveThemeButton(theme);
-  }, 500);
+  ThemeManager.setTheme(theme);
+}
+
+function applyTheme(theme) {
+  ThemeManager.applyTheme(theme);
 }
 
 function updateActiveThemeButton(activeTheme) {
-  const themeBtns = document.querySelectorAll('.theme-btn');
-  themeBtns.forEach(btn => {
-    btn.classList.remove('active');
-    if (btn.getAttribute('data-theme') === activeTheme) {
-      btn.classList.add('active');
-    }
-  });
+  ThemeManager.updateActiveThemeButton(activeTheme);
 }
 
 function createSceneButton(sceneName) {
@@ -731,17 +680,26 @@ async function connect() {
       getReplayBufferStatus();
       getStats();
       
+      // Optimized polling with debouncing
       statsInterval = setInterval(() => {
         if (socket && socket.readyState === WebSocket.OPEN) {
-          getStats();
+          const now = Date.now();
+          if (now - lastStatsRequest >= STATS_DEBOUNCE_MS) {
+            getStats();
+            lastStatsRequest = now;
+          }
         }
-      }, 2000);
+      }, 3000); // Increased from 2000ms to 3000ms
       
       audioSyncInterval = setInterval(() => {
         if (socket && socket.readyState === WebSocket.OPEN) {
-          updateAudioSourceUI();
+          const now = Date.now();
+          if (now - lastAudioSyncRequest >= AUDIO_SYNC_DEBOUNCE_MS) {
+            updateAudioSourceUI();
+            lastAudioSyncRequest = now;
+          }
         }
-      }, 2000);
+      }, 4000); // Increased from 2000ms to 4000ms
     }
 
     handleObsMessage(msg);
@@ -813,9 +771,6 @@ async function connect() {
 document.addEventListener('DOMContentLoaded', function() {
   // Load version information
   loadVersionInfo();
-  
-  // Force theme application first
-  forceThemeApplication();
   
   // Initialize theme switcher
   initThemeSwitcher();
@@ -1082,41 +1037,6 @@ function initPageVisibilityHandling() {
 
 // QR Code Scanner functionality removed for now 
 
-// Force theme application for mobile devices
-function forceThemeApplication() {
-  const savedTheme = localStorage.getItem('obs-theme') || 'ocean';
-  
-  // Apply theme immediately
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  updateActiveThemeButton(savedTheme);
-  
-  // Force reflow
-  document.documentElement.offsetHeight;
-  
-  // Re-apply with delays for mobile devices
-  setTimeout(() => {
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    updateActiveThemeButton(savedTheme);
-  }, 50);
-  
-  setTimeout(() => {
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    updateActiveThemeButton(savedTheme);
-  }, 200);
-  
-  setTimeout(() => {
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    updateActiveThemeButton(savedTheme);
-    
-    // Final verification and force update
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    if (currentTheme !== savedTheme) {
-      document.documentElement.setAttribute('data-theme', savedTheme);
-      updateActiveThemeButton(savedTheme);
-    }
-  }, 500);
-} 
-
 // Mobile-specific optimizations
 function initMobileOptimizations() {
   // Prevent zoom on double tap
@@ -1148,19 +1068,6 @@ function initMobileOptimizations() {
         e.preventDefault();
       }, { passive: false });
     });
-    
-    // Force theme application for mobile with multiple attempts
-    setTimeout(() => {
-      forceThemeApplication();
-    }, 100);
-    
-    setTimeout(() => {
-      forceThemeApplication();
-    }, 500);
-    
-    setTimeout(() => {
-      forceThemeApplication();
-    }, 1000);
     
     // Add specific mobile event listeners for theme buttons
     const themeBtns = document.querySelectorAll('.theme-btn');
