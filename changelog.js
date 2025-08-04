@@ -1,11 +1,52 @@
 // Changelog functionality
-let currentVersion = '1.1.0';
+let currentVersion = '1.1.27';
+
+// Theme switcher functionality (copied from main script for changelog page)
+function initThemeSwitcher() {
+  const themeBtns = document.querySelectorAll('.theme-btn');
+  const savedTheme = localStorage.getItem('obs-theme') || 'ocean';
+  
+  // Set initial theme
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateActiveThemeButton(savedTheme);
+  
+  // Add click and touch handlers for better Safari/iPad support
+  themeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const theme = btn.getAttribute('data-theme');
+      setTheme(theme);
+    });
+    
+    // Add touchstart for better iPad support
+    btn.addEventListener('touchstart', (e) => {
+      e.preventDefault(); // Prevent double-tap zoom
+      const theme = btn.getAttribute('data-theme');
+      setTheme(theme);
+    }, { passive: false });
+  });
+}
+
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('obs-theme', theme);
+  updateActiveThemeButton(theme);
+}
+
+function updateActiveThemeButton(activeTheme) {
+  const themeBtns = document.querySelectorAll('.theme-btn');
+  themeBtns.forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.getAttribute('data-theme') === activeTheme) {
+      btn.classList.add('active');
+    }
+  });
+}
 
 // Initialize changelog when page loads
 document.addEventListener('DOMContentLoaded', function() {
   loadVersionInfo();
   loadChangelog();
-  initThemeSwitcher(); // Reuse theme switcher from main script
+  initThemeSwitcher();
 });
 
 // Load version information from package.json
@@ -225,6 +266,24 @@ function loadLocalChangelog() {
       </div>
       
       <div class="release-body">
+        <h5>📱 QR Code Scanner</h5>
+        <ul>
+          <li>Added QR code scanning for easy OBS connection setup</li>
+          <li>Scan QR codes with format: obsws://localhost:4455/SERVER-PASSWORD</li>
+          <li>Automatically fills connection fields when QR code is detected</li>
+          <li>Camera access with fallback to manual entry</li>
+          <li>Real-time QR code detection and validation</li>
+        </ul>
+
+        <h5>🍎 Safari/iPad Compatibility</h5>
+        <ul>
+          <li>Fixed theme switching issues on Safari and iPad</li>
+          <li>Added touch event handling for better mobile support</li>
+          <li>Improved CSS compatibility with Safari-specific properties</li>
+          <li>Enhanced touch interaction for theme buttons</li>
+          <li>Better mobile responsiveness and user experience</li>
+        </ul>
+
         <h5>🔌 Improved Connection UI</h5>
         <ul>
           <li>Removed reconnect button for cleaner interface</li>

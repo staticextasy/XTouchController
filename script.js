@@ -23,28 +23,57 @@ let connectionState = {
   lastConnected: null
 };
 
+// Connection recovery variables
+let autoReconnectEnabled = true;
+let reconnectAttempts = 0;
+let maxReconnectAttempts = 3;
+let reconnectInterval = null;
+
 // Theme switcher functionality
 function initThemeSwitcher() {
   const themeBtns = document.querySelectorAll('.theme-btn');
   const savedTheme = localStorage.getItem('obs-theme') || 'ocean';
   
-  // Set initial theme
+  // Set initial theme immediately
   document.documentElement.setAttribute('data-theme', savedTheme);
   updateActiveThemeButton(savedTheme);
   
-  // Add click handlers
+  // Add click and touch handlers for better Safari/iPad support
   themeBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const theme = btn.getAttribute('data-theme');
-      setTheme(theme);
-    });
+    // Remove any existing listeners to prevent duplicates
+    btn.removeEventListener('click', handleThemeClick);
+    btn.removeEventListener('touchstart', handleThemeTouch);
+    
+    // Add new listeners
+    btn.addEventListener('click', handleThemeClick);
+    btn.addEventListener('touchstart', handleThemeTouch, { passive: false });
   });
+  
+  // Force theme application for mobile devices
+  forceThemeApplication();
+}
+
+function handleThemeClick(e) {
+  e.preventDefault();
+  const theme = e.currentTarget.getAttribute('data-theme');
+  setTheme(theme);
+}
+
+function handleThemeTouch(e) {
+  e.preventDefault(); // Prevent double-tap zoom
+  const theme = e.currentTarget.getAttribute('data-theme');
+  setTheme(theme);
 }
 
 function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('obs-theme', theme);
   updateActiveThemeButton(theme);
+  
+  // Force re-application for mobile devices
+  setTimeout(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, 50);
 }
 
 function updateActiveThemeButton(activeTheme) {
@@ -123,6 +152,7 @@ async function toggleStream() {
 }
 
 async function toggleRecording() {
+  console.log('Toggle recording called, current state:', isRecording);
   const request = {
     op: 6,
     d: {
@@ -131,6 +161,7 @@ async function toggleRecording() {
     }
   };
   socket.send(JSON.stringify(request));
+  console.log('Recording toggle request sent:', request.d.requestType);
 }
 
 async function toggleReplayBuffer() {
@@ -553,19 +584,28 @@ function handleObsMessage(msg) {
   // Handle stream/record toggle responses
   if (msg.op === 7 && (msg.d.requestType === "StartStream" || msg.d.requestType === "StopStream")) {
     if (!msg.d.error) {
-      getStreamStatus(); // Refresh status
+      // Add a small delay to ensure OBS has processed the state change
+      setTimeout(() => {
+        getStreamStatus(); // Refresh status
+      }, 500);
     }
   }
 
   if (msg.op === 7 && (msg.d.requestType === "StartRecord" || msg.d.requestType === "StopRecord")) {
     if (!msg.d.error) {
-      getRecordStatus(); // Refresh status
+      // Add a small delay to ensure OBS has processed the state change
+      setTimeout(() => {
+        getRecordStatus(); // Refresh status
+      }, 500);
     }
   }
 
   if (msg.op === 7 && (msg.d.requestType === "StartReplayBuffer" || msg.d.requestType === "StopReplayBuffer")) {
     if (!msg.d.error) {
-      getReplayBufferStatus(); // Refresh status
+      // Add a small delay to ensure OBS has processed the state change
+      setTimeout(() => {
+        getReplayBufferStatus(); // Refresh status
+      }, 500);
     }
   }
 
@@ -636,11 +676,12 @@ function handleObsMessage(msg) {
     }
   }
 
-  // Handle recording state change events
+  // Handle recording state change events - FIXED: Now properly updates UI immediately
   if (msg.op === 5 && msg.d.eventType === "RecordStateChanged") {
     const eventData = msg.d.eventData;
     const isActive = eventData.outputState === 'OBS_RECORDING_STATE_RECORDING';
     updateRecordingStatus(isActive ? 'Active' : 'Inactive');
+    console.log('Recording state changed:', eventData.outputState, 'UI updated to:', isActive ? 'Active' : 'Inactive');
   }
 
   // Handle stream state change events
@@ -730,6 +771,9 @@ async function connect() {
      connectionState.password = password;
      connectionState.lastConnected = new Date().toISOString();
      localStorage.setItem('obsConnectionState', JSON.stringify(connectionState));
+     
+     // Reset reconnection attempts on successful connection
+     reconnectAttempts = 0;
      
      // Update button state
      const connectBtn = document.getElementById('connect-btn');
@@ -842,6 +886,15 @@ async function connect() {
     updateStatus("Connection closed - make sure OBS is running and WebSocket server is enabled", "error");
     updateConnectionStatus("Disconnected");
     
+    // Update connection state
+    connectionState.isConnected = false;
+    localStorage.setItem('obsConnectionState', JSON.stringify(connectionState));
+    
+    // Start reconnection timer if auto-reconnect is enabled
+    if (autoReconnectEnabled && connectionState.lastConnected) {
+      startReconnectTimer();
+    }
+    
     // Reset connect button
     const connectBtn = document.getElementById('connect-btn');
     if (connectBtn) {
@@ -871,11 +924,20 @@ async function connect() {
      // Load version information
      loadVersionInfo();
      
+     // Force theme application first
+     forceThemeApplication();
+     
      // Initialize theme switcher
      initThemeSwitcher();
      
+     // Initialize page visibility handling
+     initPageVisibilityHandling();
+     
      // Restore connection state from localStorage
      restoreConnectionState();
+     
+     // Initialize QR code scanner
+     initQRScanner();
      
      // Set up disconnect/reconnect button event listeners
      const disconnectBtn = document.getElementById('disconnect-btn');
@@ -1060,6 +1122,96 @@ function restoreConnectionState() {
   }
 }
 
+// Connection recovery functions
+function attemptReconnect() {
+  if (!autoReconnectEnabled || reconnectAttempts >= maxReconnectAttempts) {
+    console.log('Auto-reconnect disabled or max attempts reached');
+    return;
+  }
+  
+  reconnectAttempts++;
+  console.log(`Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`);
+  
+  // Get saved connection details
+  const savedState = localStorage.getItem('obsConnectionState');
+  if (savedState) {
+    try {
+      const state = JSON.parse(savedState);
+      obsIP = state.obsIP || 'localhost';
+      password = state.password || '';
+      
+      // Update UI fields
+      const obsIpField = document.getElementById('obs-ip');
+      const obsPasswordField = document.getElementById('obs-password');
+      if (obsIpField) obsIpField.value = obsIP;
+      if (obsPasswordField) obsPasswordField.value = password;
+      
+      // Attempt connection
+      connect();
+    } catch (error) {
+      console.error('Failed to restore connection for auto-reconnect:', error);
+    }
+  }
+}
+
+function startReconnectTimer() {
+  if (reconnectInterval) {
+    clearInterval(reconnectInterval);
+  }
+  
+  reconnectInterval = setInterval(() => {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      // Connection is good, clear timer
+      clearInterval(reconnectInterval);
+      reconnectInterval = null;
+      reconnectAttempts = 0;
+      return;
+    }
+    
+    // Check if we should attempt reconnection
+    if (autoReconnectEnabled && reconnectAttempts < maxReconnectAttempts) {
+      attemptReconnect();
+    } else {
+      clearInterval(reconnectInterval);
+      reconnectInterval = null;
+    }
+  }, 5000); // Check every 5 seconds
+}
+
+// Page visibility API handling
+function handlePageVisibilityChange() {
+  if (document.hidden) {
+    console.log('Page hidden - maintaining connection');
+  } else {
+    console.log('Page visible - checking connection status');
+    // When page becomes visible, check if we need to reconnect
+    if (connectionState.isConnected && (!socket || socket.readyState !== WebSocket.OPEN)) {
+      console.log('Connection lost while page was hidden, attempting to reconnect...');
+      reconnectAttempts = 0; // Reset attempts when page becomes visible
+      attemptReconnect();
+    }
+  }
+}
+
+// Initialize page visibility handling
+function initPageVisibilityHandling() {
+  // Handle page visibility changes
+  document.addEventListener('visibilitychange', handlePageVisibilityChange);
+  
+  // Handle page focus/blur events
+  window.addEventListener('focus', () => {
+    console.log('Window focused - checking connection');
+    if (connectionState.isConnected && (!socket || socket.readyState !== WebSocket.OPEN)) {
+      reconnectAttempts = 0;
+      attemptReconnect();
+    }
+  });
+  
+  window.addEventListener('blur', () => {
+    console.log('Window blurred - maintaining connection');
+  });
+}
+
    // Global functions for debugging (accessible from browser console)
   window.getAudioSources = getAudioSources;
   window.getAllInputs = getAllInputs;
@@ -1071,4 +1223,250 @@ function restoreConnectionState() {
     console.log(`  - Values: ${Array.from(muteRequests.values())}`);
     console.log(`  - muteOperationInProgress: ${muteOperationInProgress}`);
     console.log(`  - requestIdCounter: ${requestIdCounter}`);
-  }; 
+  };
+  
+  // Add connection status checker
+  window.checkConnectionStatus = () => {
+    console.log("=== Connection Status ===");
+    console.log(`Socket exists: ${!!socket}`);
+    if (socket) {
+      console.log(`Socket readyState: ${socket.readyState}`);
+      console.log(`Socket URL: ${socket.url}`);
+    }
+    console.log(`Connection state:`, connectionState);
+    console.log(`Auto-reconnect enabled: ${autoReconnectEnabled}`);
+    console.log(`Reconnect attempts: ${reconnectAttempts}/${maxReconnectAttempts}`);
+    console.log(`Reconnect interval active: ${!!reconnectInterval}`);
+    console.log(`Current OBS IP: ${obsIP}`);
+    console.log(`Password set: ${!!password}`);
+  };
+  
+  // Add theme checker
+  window.checkThemeStatus = () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const savedTheme = localStorage.getItem('obs-theme');
+    console.log("=== Theme Status ===");
+    console.log(`Current theme: ${currentTheme}`);
+    console.log(`Saved theme: ${savedTheme}`);
+    console.log(`Theme applied: ${currentTheme === savedTheme}`);
+  };
+
+// QR Code Scanner functionality
+let qrStream = null;
+let qrScanning = false;
+
+function initQRScanner() {
+  const qrScanBtn = document.getElementById('qr-scan-btn');
+  const qrManualBtn = document.getElementById('qr-manual-btn');
+  
+  if (qrScanBtn) {
+    qrScanBtn.addEventListener('click', openQRScanner);
+  }
+  
+  if (qrManualBtn) {
+    qrManualBtn.addEventListener('click', () => {
+      // Close modal and focus on IP field
+      const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
+      if (modal) {
+        modal.hide();
+      }
+      document.getElementById('obs-ip').focus();
+    });
+  }
+}
+
+function openQRScanner() {
+  const modal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
+  modal.show();
+  
+  // Start camera after modal is shown
+  setTimeout(() => {
+    startQRScanner();
+  }, 500);
+}
+
+async function startQRScanner() {
+  const video = document.getElementById('qr-video');
+  const status = document.getElementById('qr-status');
+  
+  try {
+    // Check if getUserMedia is supported
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('Camera access not supported in this browser');
+    }
+    
+    // Request camera access with better mobile support
+    const constraints = {
+      video: {
+        facingMode: 'environment', // Use back camera on mobile
+        width: { ideal: 1280, min: 640 },
+        height: { ideal: 720, min: 480 },
+        aspectRatio: { ideal: 16/9 }
+      }
+    };
+    
+    // Try to get camera access
+    qrStream = await navigator.mediaDevices.getUserMedia(constraints);
+    
+    // Set video source
+    video.srcObject = qrStream;
+    video.onloadedmetadata = () => {
+      video.play().catch(e => {
+        console.error('Video play error:', e);
+        status.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Camera started but video playback failed. Please try again.';
+        status.className = 'alert alert-warning';
+      });
+    };
+    
+    qrScanning = true;
+    
+    status.innerHTML = '<i class="bi bi-camera"></i> Camera active. Point at QR code...';
+    status.className = 'alert alert-success';
+    
+    // Start scanning
+    scanQRCode();
+    
+  } catch (error) {
+    console.error('Camera access error:', error);
+    
+    let errorMessage = 'Camera access denied. ';
+    
+    if (error.name === 'NotAllowedError') {
+      errorMessage += 'Please allow camera access in your browser settings and try again.';
+    } else if (error.name === 'NotFoundError') {
+      errorMessage += 'No camera found on this device.';
+    } else if (error.name === 'NotSupportedError') {
+      errorMessage += 'Camera not supported in this browser.';
+    } else if (error.name === 'NotReadableError') {
+      errorMessage += 'Camera is already in use by another application.';
+    } else {
+      errorMessage += 'Please check your camera permissions and try again.';
+    }
+    
+    status.innerHTML = `<i class="bi bi-exclamation-triangle"></i> ${errorMessage}`;
+    status.className = 'alert alert-warning';
+    
+    // Add manual entry button as fallback
+    const manualBtn = document.getElementById('qr-manual-btn');
+    if (manualBtn) {
+      manualBtn.style.display = 'block';
+      manualBtn.innerHTML = '<i class="bi bi-keyboard"></i> Enter Connection Details Manually';
+    }
+  }
+}
+
+function scanQRCode() {
+  if (!qrScanning) return;
+  
+  const video = document.getElementById('qr-video');
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  
+  if (video.videoWidth === 0) {
+    // Video not ready yet, try again
+    setTimeout(scanQRCode, 100);
+    return;
+  }
+  
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const code = jsQR(imageData.data, imageData.width, imageData.height);
+  
+  if (code) {
+    // QR code found!
+    handleQRCodeResult(code.data);
+    return;
+  }
+  
+  // Continue scanning
+  setTimeout(scanQRCode, 100);
+}
+
+function handleQRCodeResult(qrData) {
+  console.log('QR Code detected:', qrData);
+  
+  // Parse OBS WebSocket URL format: obsws://localhost:4455/SERVER-PASSWORD
+  const obsUrlPattern = /^obsws:\/\/([^:]+):(\d+)\/(.+)$/;
+  const match = qrData.match(obsUrlPattern);
+  
+  if (match) {
+    const [, host, port, password] = match;
+    
+    // Update form fields
+    document.getElementById('obs-ip').value = host;
+    document.getElementById('obs-password').value = password;
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
+    if (modal) {
+      modal.hide();
+    }
+    
+    // Show success message
+    const status = document.getElementById('qr-status');
+    status.innerHTML = '<i class="bi bi-check-circle"></i> QR code scanned successfully! Connection details filled.';
+    status.className = 'alert alert-success';
+    
+    // Stop scanning
+    stopQRScanner();
+    
+  } else {
+    // Invalid QR code format
+    const status = document.getElementById('qr-status');
+    status.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Invalid QR code format. Expected: obsws://host:port/password';
+    status.className = 'alert alert-warning';
+    
+    // Continue scanning
+    setTimeout(() => {
+      status.innerHTML = '<i class="bi bi-camera"></i> Camera active. Point at QR code...';
+      status.className = 'alert alert-success';
+    }, 3000);
+  }
+}
+
+function stopQRScanner() {
+  qrScanning = false;
+  
+  if (qrStream) {
+    qrStream.getTracks().forEach(track => track.stop());
+    qrStream = null;
+  }
+  
+  const video = document.getElementById('qr-video');
+  if (video) {
+    video.srcObject = null;
+  }
+}
+
+// Clean up QR scanner when modal is closed
+document.addEventListener('DOMContentLoaded', function() {
+  const qrModal = document.getElementById('qrScannerModal');
+  if (qrModal) {
+    qrModal.addEventListener('hidden.bs.modal', stopQRScanner);
+  }
+}); 
+
+// Force theme application for mobile devices
+function forceThemeApplication() {
+  const savedTheme = localStorage.getItem('obs-theme') || 'ocean';
+  
+  // Apply theme multiple times to ensure it sticks on mobile
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  
+  // Force a reflow to ensure the theme is applied
+  document.documentElement.offsetHeight;
+  
+  // Apply again after a short delay
+  setTimeout(() => {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateActiveThemeButton(savedTheme);
+  }, 50);
+  
+  // Apply one more time after a longer delay for stubborn mobile browsers
+  setTimeout(() => {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, 200);
+} 

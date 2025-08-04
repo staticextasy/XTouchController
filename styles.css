@@ -162,6 +162,12 @@ h1 {
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  /* Safari/iPad touch improvements */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
 }
 
 .theme-btn:hover {
@@ -483,6 +489,10 @@ h1 {
   .theme-btn {
     width: 30px;
     height: 30px;
+    /* Improved touch targets for mobile */
+    min-width: 44px;
+    min-height: 44px;
+    touch-action: manipulation;
   }
   
   .audio-source {
@@ -502,6 +512,21 @@ h1 {
   .audio-name {
     min-width: auto;
   }
+  
+  /* Mobile-specific theme improvements */
+  [data-theme] {
+    transition: none !important; /* Disable transitions on mobile for better performance */
+  }
+  
+  /* Ensure theme colors are applied immediately on mobile */
+  [data-theme="ocean"] .main-container,
+  [data-theme="sunset"] .main-container,
+  [data-theme="forest"] .main-container,
+  [data-theme="midnight"] .main-container,
+  [data-theme="aurora"] .main-container,
+  [data-theme="darkmode"] .main-container {
+    background: var(--card-bg) !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -518,10 +543,14 @@ h1 {
   .theme-btn {
     width: 28px;
     height: 28px;
+    min-width: 44px;
+    min-height: 44px;
   }
   
   .control-btn {
     padding: 0.75rem !important;
+    /* Improved touch targets */
+    min-height: 60px;
   }
   
   .btn-icon {
@@ -530,6 +559,16 @@ h1 {
   
   .btn-text {
     font-size: 0.8rem;
+  }
+  
+  /* Mobile QR scanner improvements */
+  .qr-scanner-container {
+    max-width: 100%;
+  }
+  
+  .qr-scan-area {
+    width: 150px;
+    height: 150px;
   }
 }
 
@@ -673,4 +712,67 @@ footer .btn:hover {
 [data-theme="darkmode"] footer p {
   color: #f3f4f6;
   opacity: 0.8;
+}
+
+/* QR Code Scanner Styles */
+.qr-scanner-container {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+}
+
+.qr-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-scan-area {
+  width: 200px;
+  height: 200px;
+  border: 2px solid #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.qr-scan-area::before,
+.qr-scan-area::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #667eea;
+}
+
+.qr-scan-area::before {
+  top: -3px;
+  left: -3px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.qr-scan-area::after {
+  bottom: -3px;
+  right: -3px;
+  border-left: none;
+  border-top: none;
+}
+
+[data-theme="darkmode"] .qr-scan-area {
+  border-color: #6366f1;
+}
+
+[data-theme="darkmode"] .qr-scan-area::before,
+[data-theme="darkmode"] .qr-scan-area::after {
+  border-color: #6366f1;
 } 
