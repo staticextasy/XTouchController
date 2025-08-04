@@ -81,13 +81,13 @@
             <div class="card-body">
               <div class="row g-3">
                 <div class="col-md-6">
-                  <button class="btn btn-outline-danger w-100" id="disconnect-btn" onclick="disconnectFromOBS()" disabled>
+                  <button class="btn btn-outline-danger w-100" id="disconnect-btn" disabled>
                     <i class="bi bi-wifi-off"></i>
                     Disconnect
                   </button>
                 </div>
                 <div class="col-md-6">
-                  <button class="btn btn-outline-success w-100" id="reconnect-btn" onclick="reconnectToOBS()">
+                  <button class="btn btn-outline-success w-100" id="reconnect-btn">
                     <i class="bi bi-wifi"></i>
                     Reconnect
                   </button>
@@ -106,19 +106,19 @@
         <div class="card-body">
           <div class="row g-3">
             <div class="col-md-4">
-              <button class="btn btn-primary w-100 control-btn" id="stream-btn" onclick="toggleStream()">
+              <button class="btn btn-primary w-100 control-btn" id="stream-btn">
                 <i class="bi bi-broadcast btn-icon"></i>
                 <span class="btn-text d-block">Start Stream</span>
               </button>
             </div>
             <div class="col-md-4">
-              <button class="btn btn-danger w-100 control-btn" id="record-btn" onclick="toggleRecording()">
+              <button class="btn btn-danger w-100 control-btn" id="record-btn">
                 <i class="bi bi-record-circle btn-icon"></i>
                 <span class="btn-text d-block">Start Recording</span>
               </button>
             </div>
             <div class="col-md-4">
-              <button class="btn btn-warning w-100 control-btn" id="replay-btn" onclick="toggleReplayBuffer()">
+              <button class="btn btn-warning w-100 control-btn" id="replay-btn">
                 <i class="bi bi-arrow-counterclockwise btn-icon"></i>
                 <span class="btn-text d-block">Replay Buffer</span>
               </button>

@@ -942,31 +942,48 @@ async function connect() {
   }, 5000); // 5 second timeout
 }
 
-   // Initialize the application
-  document.addEventListener('DOMContentLoaded', function() {
-    // Load version information
-    loadVersionInfo();
-    
-    // Initialize theme switcher
-    initThemeSwitcher();
-    
-    // Set up disconnect/reconnect button event listeners
-    const reconnectBtn = document.getElementById('reconnect-btn');
-    const disconnectBtn = document.getElementById('disconnect-btn');
-    
-    if (reconnectBtn) {
-      reconnectBtn.addEventListener('click', reconnectToOBS);
-      reconnectBtn.disabled = false;
-    }
-    
-    if (disconnectBtn) {
-      disconnectBtn.addEventListener('click', disconnectFromOBS);
-      disconnectBtn.disabled = true;
-    }
-    
-    // Start the connection
-    connect();
-  });
+      // Initialize the application
+   document.addEventListener('DOMContentLoaded', function() {
+     // Load version information
+     loadVersionInfo();
+     
+     // Initialize theme switcher
+     initThemeSwitcher();
+     
+     // Set up disconnect/reconnect button event listeners
+     const reconnectBtn = document.getElementById('reconnect-btn');
+     const disconnectBtn = document.getElementById('disconnect-btn');
+     
+     if (reconnectBtn) {
+       reconnectBtn.addEventListener('click', reconnectToOBS);
+       reconnectBtn.disabled = false;
+     }
+     
+     if (disconnectBtn) {
+       disconnectBtn.addEventListener('click', disconnectFromOBS);
+       disconnectBtn.disabled = true;
+     }
+     
+     // Set up stream/record control button event listeners
+     const streamBtn = document.getElementById('stream-btn');
+     const recordBtn = document.getElementById('record-btn');
+     const replayBtn = document.getElementById('replay-btn');
+     
+     if (streamBtn) {
+       streamBtn.addEventListener('click', toggleStream);
+     }
+     
+     if (recordBtn) {
+       recordBtn.addEventListener('click', toggleRecording);
+     }
+     
+     if (replayBtn) {
+       replayBtn.addEventListener('click', toggleReplayBuffer);
+     }
+     
+     // Start the connection
+     connect();
+   });
 
 // Load version information from package.json
 async function loadVersionInfo() {
