@@ -1023,91 +1023,13 @@ function updateExistingAudioControls(audioSources) {
   console.log("Updating existing audio controls with:", audioSources);
   console.log(`🔍 muteRequests before updateExistingAudioControls: size=${muteRequests.size}, keys=${Array.from(muteRequests.keys())}`);
   
+  // Since GetInputList doesn't provide mute/volume status, we need to request it for each source
   audioSources.forEach(source => {
-    const muteBtn = document.querySelector(`.mute-btn[data-input-name="${source.inputName}"]`);
-    if (muteBtn) {
-      // Update button text and class
-      muteBtn.textContent = source.inputMuted ? 'Unmute' : 'Mute';
-      muteBtn.className = `btn btn-sm audio-btn mute-btn ${source.inputMuted ? 'muted' : ''}`;
-      
-                   // Update mute status indicator
-      // The mute status is a sibling of the mute button within .audio-controls
-      const muteStatus = muteBtn.parentElement.querySelector('.mute-status');
-      if (muteStatus) {
-        const muteStatusText = muteStatus.querySelector('.mute-status-text');
-        if (muteStatusText) {
-          // Handle undefined inputMuted
-          const isMuted = source.inputMuted === true;
-          muteStatusText.textContent = isMuted ? 'MUTED' : 'LIVE';
-          console.log(`🔇 Updated mute status for ${source.inputName}: ${isMuted ? 'MUTED' : 'LIVE'}`);
-        }
-        muteStatus.className = `mute-status me-2 ${source.inputMuted === true ? 'muted' : 'unmuted'}`;
-      } else {
-        console.error(`❌ Could not find mute status indicator for ${source.inputName}`);
-      }
-      
-             // Update volume slider value (but don't trigger change event)
-       const volumeSlider = muteBtn.parentElement.querySelector('.volume-slider');
-       if (volumeSlider) {
-         const currentValue = parseFloat(volumeSlider.value);
-         
-                   // Convert volume multiplier to linear percentage using the corrected scaling
-          let newValue;
-          let calculatedDb;
-          
-          // Handle undefined or null inputVolumeMul
-          if (source.inputVolumeMul === undefined || source.inputVolumeMul === null) {
-            console.warn(`⚠️ inputVolumeMul is undefined for ${source.inputName}, skipping update`);
-            return;
-          }
-          
-          if (source.inputVolumeMul === 0) {
-            newValue = 0; // Mute
-            calculatedDb = -60;
-          } else if (source.inputVolumeMul === 1) {
-            newValue = 100; // Full volume (0 dB)
-            calculatedDb = 0;
-          } else {
-            // Convert multiplier to dB: dB = 20 * log10(multiplier)
-            calculatedDb = 20 * Math.log10(source.inputVolumeMul);
-            
-            // Apply the same human-friendly mapping as in the event handler
-            // Convert OBS's dB to a more intuitive percentage
-            
-            // Use the same power curve for consistency
-            const normalizedDb = (calculatedDb + 60) / 60; // 0 to 1 range
-            newValue = Math.pow(normalizedDb, 1.5) * 100; // Power curve for more intuitive feel
-            
-            // Clamp to valid range
-            newValue = Math.max(0, Math.min(100, newValue));
-          }
-          
-          console.log(`Checking ${source.inputName}: current=${currentValue}%, new=${newValue.toFixed(2)}%, diff=${Math.abs(currentValue - newValue).toFixed(2)}`);
-          console.log(`  - OBS volume mul: ${source.inputVolumeMul.toFixed(6)}`);
-          console.log(`  - OBS calculated dB: ${calculatedDb.toFixed(2)} dB`);
-          console.log(`  - Power curve mapping: normalized=${((calculatedDb + 60) / 60).toFixed(3)} -> slider=${newValue.toFixed(1)}%`);
-         
-         // Always update the slider to match OBS (remove threshold)
-         if (Math.abs(currentValue - newValue) > 0.1) {
-           volumeSlider.value = newValue;
-           console.log(`✅ Updated slider for ${source.inputName}: ${currentValue}% -> ${newValue.toFixed(1)}%`);
-           
-           // Update dB value display - use OBS's calculated dB
-           const dbValue = muteBtn.parentElement.querySelector('.db-value');
-           if (dbValue) {
-             dbValue.textContent = `${calculatedDb.toFixed(1)} dB`;
-           }
-         }
-       }
-      
-      // Update audio level indicator
-      const audioLevelFill = muteBtn.parentElement.parentElement.querySelector('.audio-level-fill');
-      if (audioLevelFill) {
-        audioLevelFill.style.width = `${source.inputVolumeMul * 100}%`;
-      }
-    } else {
-      console.log(`❌ Could not find mute button for: ${source.inputName}`);
-    }
+    // Request mute status for this source
+    getInputMute(source.inputName);
+    
+    // Note: Volume updates will come from InputVolumeChanged events
+    // We don't need to request volume status here
   });
 }
 
