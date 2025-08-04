@@ -180,6 +180,7 @@ async function getInputMute(inputName) {
     }
   };
   console.log(`Getting mute status for: ${inputName} with requestId: ${requestId}`);
+  console.log(`🔒 muteOperationInProgress: ${muteOperationInProgress}`);
   
   // Store the input name for this request
   muteRequests.set(requestId, inputName);
@@ -668,6 +669,7 @@ function handleObsMessage(msg) {
         setTimeout(() => {
           muteOperationInProgress = false;
           console.log("🔓 Mute operation completed, periodic updates resumed");
+          console.log(`🔍 muteRequests at flag reset: size=${muteRequests.size}, keys=${Array.from(muteRequests.keys())}`);
         }, 500);
       }, 100);
     } else {
@@ -1034,12 +1036,15 @@ async function updateAudioSourceUI() {
 function updateExistingAudioControls(audioSources) {
   console.log("Updating existing audio controls with:", audioSources);
   console.log(`🔍 muteRequests before updateExistingAudioControls: size=${muteRequests.size}, keys=${Array.from(muteRequests.keys())}`);
+  console.log(`🔒 muteOperationInProgress: ${muteOperationInProgress}`);
   
   // Skip mute status updates if a user-initiated mute operation is in progress
   if (muteOperationInProgress) {
     console.log("🔒 Skipping periodic mute status updates - user operation in progress");
     return;
   }
+  
+  console.log("🔄 Proceeding with periodic mute status updates");
   
   // Since GetInputList doesn't provide mute/volume status, we need to request it for each source
   audioSources.forEach(source => {
@@ -1128,11 +1133,18 @@ function forceSyncWithOBS() {
    connect();
  }
 
- // Global functions for debugging (accessible from browser console)
- window.testObsConnection = testObsConnection;
- window.getAudioSources = getAudioSources;
- window.getAllInputs = getAllInputs;
- window.refreshAudioSources = refreshAudioSources;
- window.forceSyncWithOBS = forceSyncWithOBS;
- window.disconnectFromOBS = disconnectFromOBS;
- window.reconnectToOBS = reconnectToOBS; 
+   // Global functions for debugging (accessible from browser console)
+  window.testObsConnection = testObsConnection;
+  window.getAudioSources = getAudioSources;
+  window.getAllInputs = getAllInputs;
+  window.refreshAudioSources = refreshAudioSources;
+  window.forceSyncWithOBS = forceSyncWithOBS;
+  window.disconnectFromOBS = disconnectFromOBS;
+  window.reconnectToOBS = reconnectToOBS;
+  window.checkMuteRequests = () => {
+    console.log("🔍 Current muteRequests state:");
+    console.log(`  - Size: ${muteRequests.size}`);
+    console.log(`  - Keys: ${Array.from(muteRequests.keys())}`);
+    console.log(`  - Values: ${Array.from(muteRequests.values())}`);
+    console.log(`  - muteOperationInProgress: ${muteOperationInProgress}`);
+  }; 
