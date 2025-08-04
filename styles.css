@@ -117,6 +117,34 @@
   background: rgba(55, 65, 81, 0.8);
 }
 
+/* Dark mode form input styling */
+[data-theme="darkmode"] .form-control,
+[data-theme="darkmode"] .form-select {
+  background-color: rgba(55, 65, 81, 0.8);
+  border-color: #4b5563;
+  color: #ffffff;
+}
+
+[data-theme="darkmode"] .form-control:focus,
+[data-theme="darkmode"] .form-select:focus {
+  background-color: rgba(55, 65, 81, 0.9);
+  border-color: #6366f1;
+  color: #ffffff;
+  box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
+}
+
+[data-theme="darkmode"] .form-control::placeholder {
+  color: #9ca3af;
+}
+
+[data-theme="darkmode"] .form-label {
+  color: #ffffff;
+}
+
+[data-theme="darkmode"] .form-text {
+  color: #d1d5db;
+}
+
 /* Global Styles */
 body {
   background: var(--primary-gradient);

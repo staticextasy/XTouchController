@@ -774,6 +774,19 @@ function handleObsMessage(msg) {
 
 // Enhanced connection function
 async function connect() {
+  // Check if we already have an active connection
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    console.log('Connection already exists and is open, skipping new connection');
+    return;
+  }
+  
+  // If there's an existing socket that's not open, close it properly
+  if (socket) {
+    console.log('Closing existing socket before creating new connection');
+    socket.close();
+    socket = null;
+  }
+  
   updateStatus("Connecting to OBS...", "connecting");
   updateConnectionStatus("Connecting");
   socket = new WebSocket(`ws://${obsIP}:4455`);
@@ -1116,20 +1129,25 @@ function restoreConnectionState() {
         password = state.password;
       }
       
-      // If we were previously connected, attempt auto-reconnection
+      // If we were previously connected, check if we need to reconnect
       if (state.isConnected && state.lastConnected) {
         const lastConnected = new Date(state.lastConnected);
         const timeSinceConnection = Date.now() - lastConnected.getTime();
         
-        // If connection was within the last 5 minutes, attempt to reconnect
+        // If connection was within the last 5 minutes, check if we need to reconnect
         if (timeSinceConnection < 5 * 60 * 1000) {
-          console.log('Previous connection found, attempting auto-reconnection...');
-          // Attempt to reconnect automatically
-          setTimeout(() => {
-            if (autoReconnectEnabled) {
-              attemptReconnect();
-            }
-          }, 1000); // Small delay to ensure page is fully loaded
+          console.log('Previous connection found, checking if reconnection is needed...');
+          // Only attempt reconnection if we don't already have an active connection
+          if (!socket || socket.readyState !== WebSocket.OPEN) {
+            console.log('No active connection found, attempting auto-reconnection...');
+            setTimeout(() => {
+              if (autoReconnectEnabled) {
+                attemptReconnect();
+              }
+            }, 1000); // Small delay to ensure page is fully loaded
+          } else {
+            console.log('Active connection already exists, skipping reconnection');
+          }
         } else {
           // Connection is too old, clear it
           console.log('Previous connection is too old, clearing...');
@@ -1214,11 +1232,17 @@ function handlePageVisibilityChange() {
       const lastConnected = new Date(connectionState.lastConnected);
       const timeSinceConnection = Date.now() - lastConnected.getTime();
       
-      // If connection was within the last 5 minutes, attempt to reconnect
+      // If connection was within the last 5 minutes, check if reconnection is needed
       if (timeSinceConnection < 5 * 60 * 1000) {
-        console.log('Page visible and recent connection found, attempting reconnection...');
-        if (autoReconnectEnabled) {
-          attemptReconnect();
+        console.log('Page visible and recent connection found, checking if reconnection is needed...');
+        // Only attempt reconnection if we don't already have an active connection
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          console.log('No active connection found, attempting reconnection...');
+          if (autoReconnectEnabled) {
+            attemptReconnect();
+          }
+        } else {
+          console.log('Active connection already exists, skipping reconnection');
         }
       } else {
         // Connection is too old, clear it
