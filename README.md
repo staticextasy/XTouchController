@@ -2,6 +2,9 @@
 
 A comprehensive web-based controller for OBS Studio with scene switching, stream/record controls, audio management, and real-time monitoring via WebSocket connection.
 
+**Current Version:** 1.1.32  
+**Latest Update:** Performance optimizations and enhanced mobile experience
+
 ## ✨ Features
 
 - **🎭 Scene Management** - Switch between OBS scenes with beautiful buttons
@@ -109,9 +112,12 @@ A comprehensive web-based controller for OBS Studio with scene switching, stream
 ```
 XTouchController/
 ├── index.html          # Main HTML file
+├── changelog.html      # Changelog page
 ├── styles.css          # Custom CSS styles
-├── script.js           # JavaScript logic
-├── server.js           # Express server
+├── script.js           # Main JavaScript logic
+├── changelog.js        # Changelog functionality
+├── utils.js            # Shared utilities and theme management
+├── server.js           # Express server with caching
 ├── package.json        # Dependencies and scripts
 └── README.md           # Documentation
 ```
@@ -123,8 +129,10 @@ XTouchController/
 
 ### API Endpoints
 - `GET /` - Main application
+- `GET /changelog` - Changelog page
 - `GET /health` - Health check
 - `GET /api/status` - Server status
+- `GET /api/github/*` - GitHub API proxy with caching
 
 ## 🔒 Security Features
 
@@ -132,6 +140,8 @@ XTouchController/
 - **CORS** - Cross-origin resource sharing
 - **Content Security Policy** - XSS protection
 - **Compression** - Gzip compression for performance
+- **Rate Limiting** - Built-in request throttling
+- **Input Validation** - Sanitized user inputs
 
 ## 🚨 Troubleshooting
 
@@ -156,22 +166,22 @@ XTouchController/
 - **"Authentication failed"** - Verify password in configuration
 - **"Scenes not loading"** - Check OBS is running and scenes exist
 
-## 📱 Mobile Usage
+## 📋 Recent Updates (v1.1.32)
 
-The application is fully responsive and works great on mobile devices:
-- Touch-friendly buttons
-- Optimized layout for small screens
-- Swipe gestures supported
-- PWA-ready for future enhancements
+### Performance Improvements
+- ✅ Optimized polling intervals with debouncing
+- ✅ Implemented server-side caching for API responses
+- ✅ Added static asset caching with proper headers
+- ✅ Eliminated code duplication between scripts
+- ✅ Centralized theme management system
+- ✅ Enhanced mobile touch event handling
 
-## 🔮 Future Features
-
-- **User Authentication** - Secure access control
-- **Multiple OBS Instances** - Control multiple OBS setups
-- **Custom Hotkeys** - Programmable keyboard shortcuts
-- **Stream Chat Integration** - Display chat messages
-- **Analytics Dashboard** - View stream statistics
-- **Plugin System** - Extensible functionality
+### New Features
+- ✅ Shared utilities module (`utils.js`)
+- ✅ Performance utilities (debounce/throttle)
+- ✅ Centralized error handling
+- ✅ Enhanced mobile experience
+- ✅ Improved theme switching performance
 
 ## 📄 License
 
