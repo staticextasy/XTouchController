@@ -74,7 +74,6 @@ app.get('/api/github/releases', async (req, res) => {
     const releases = await response.json();
     res.json(releases);
   } catch (error) {
-    console.error('GitHub API error:', error);
     res.status(500).json({ 
       error: 'Failed to fetch releases from GitHub',
       message: error.message 
@@ -93,7 +92,6 @@ app.get('/api/github/commits', async (req, res) => {
     const commits = await response.json();
     res.json(commits);
   } catch (error) {
-    console.error('GitHub API error:', error);
     res.status(500).json({ 
       error: 'Failed to fetch commits from GitHub',
       message: error.message 
@@ -112,7 +110,6 @@ app.get('/api/github/latest', async (req, res) => {
     const latestRelease = await response.json();
     res.json(latestRelease);
   } catch (error) {
-    console.error('GitHub API error:', error);
     res.status(500).json({ 
       error: 'Failed to fetch latest release from GitHub',
       message: error.message 
@@ -122,7 +119,6 @@ app.get('/api/github/latest', async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
   res.status(500).json({ 
     error: 'Something went wrong!',
     message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'

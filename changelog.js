@@ -6,20 +6,17 @@ function initThemeSwitcher() {
   const themeBtns = document.querySelectorAll('.theme-btn');
   const savedTheme = localStorage.getItem('obs-theme') || 'ocean';
   
-  // Set initial theme
   document.documentElement.setAttribute('data-theme', savedTheme);
   updateActiveThemeButton(savedTheme);
   
-  // Add click and touch handlers for better Safari/iPad support
   themeBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const theme = btn.getAttribute('data-theme');
       setTheme(theme);
     });
     
-    // Add touchstart for better iPad support
     btn.addEventListener('touchstart', (e) => {
-      e.preventDefault(); // Prevent double-tap zoom
+      e.preventDefault();
       const theme = btn.getAttribute('data-theme');
       setTheme(theme);
     }, { passive: false });
@@ -61,7 +58,7 @@ async function loadVersionInfo() {
       document.getElementById('app-version').textContent = currentVersion;
     }
   } catch (error) {
-    console.error('Failed to load version info:', error);
+    // Handle error silently
   }
 }
 
@@ -71,7 +68,6 @@ async function loadChangelog() {
   const errorDisplay = document.getElementById('error-display');
   
   try {
-    // Show loading state
     changelogContent.innerHTML = `
       <div class="text-center py-4">
         <div class="spinner-border text-primary" role="status"></div>
@@ -80,7 +76,6 @@ async function loadChangelog() {
     `;
     errorDisplay.style.display = 'none';
 
-    // Fetch releases from our server proxy
     const response = await fetch('/api/github/releases');
     
     if (!response.ok) {
@@ -90,15 +85,12 @@ async function loadChangelog() {
     const releases = await response.json();
     
     if (releases.length === 0) {
-      // No releases found, show commit history instead
       await loadCommitHistory();
       return;
     }
 
-    // Display releases
     displayReleases(releases);
     
-    // Update release date for current version
     if (releases.length > 0) {
       const latestRelease = releases[0];
       const releaseDate = new Date(latestRelease.published_at).toLocaleDateString();
@@ -106,10 +98,7 @@ async function loadChangelog() {
     }
 
   } catch (error) {
-    console.error('Failed to load changelog:', error);
     showError('Failed to load changelog from GitHub. Please try again later.');
-    
-    // Fallback to local changelog
     loadLocalChangelog();
   }
 }
@@ -127,7 +116,6 @@ async function loadCommitHistory() {
     displayCommits(commits);
     
   } catch (error) {
-    console.error('Failed to load commit history:', error);
     loadLocalChangelog();
   }
 }
@@ -226,19 +214,17 @@ function displayCommits(commits) {
 function formatReleaseBody(body) {
   if (!body) return '<p class="text-muted">No description available</p>';
   
-  // Simple markdown to HTML conversion
   let formatted = body
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-    .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
-    .replace(/`(.*?)`/g, '<code>$1</code>') // Inline code
-    .replace(/^### (.*$)/gim, '<h5>$1</h5>') // H3
-    .replace(/^## (.*$)/gim, '<h4>$1</h4>') // H2
-    .replace(/^# (.*$)/gim, '<h3>$1</h3>') // H1
-    .replace(/^- (.*$)/gim, '<li>$1</li>') // List items
-    .replace(/\n\n/g, '</p><p>') // Paragraphs
-    .replace(/^(.+)$/gm, '<p>$1</p>'); // Wrap lines in paragraphs
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code>$1</code>')
+    .replace(/^### (.*$)/gim, '<h5>$1</h5>')
+    .replace(/^## (.*$)/gim, '<h4>$1</h4>')
+    .replace(/^# (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^- (.*$)/gim, '<li>$1</li>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(.+)$/gm, '<p>$1</p>');
   
-  // Fix double paragraphs
   formatted = formatted.replace(/<\/p><p><\/p><p>/g, '</p><p>');
   
   return formatted;
@@ -266,6 +252,15 @@ function loadLocalChangelog() {
       </div>
       
       <div class="release-body">
+        <h5>🧹 Code Cleanup</h5>
+        <ul>
+          <li>Removed excessive console.log statements throughout the application</li>
+          <li>Cleaned up unnecessary debug functions and logging</li>
+          <li>Simplified theme application logic</li>
+          <li>Removed redundant comments and verbose logging</li>
+          <li>Much cleaner console output during normal operation</li>
+        </ul>
+
         <h5>📱 QR Code Scanner</h5>
         <ul>
           <li>Added QR code scanning for easy OBS connection setup</li>
@@ -293,7 +288,7 @@ function loadLocalChangelog() {
           <li>Improved button state management throughout the application</li>
         </ul>
         
-        <h5>�� Enhanced Recording Controls</h5>
+        <h5>🎥 Enhanced Recording Controls</h5>
         <ul>
           <li>Added real-time recording state change event handling</li>
           <li>Recording button now updates immediately when recording starts/stops in OBS</li>
@@ -336,13 +331,6 @@ function loadLocalChangelog() {
       </div>
       
       <div class="release-body">
-        <h5>🧹 Cleaned Up Logging</h5>
-        <ul>
-          <li>Removed excessive debug console.log statements throughout the application</li>
-          <li>Kept only essential error logging for troubleshooting</li>
-          <li>Much cleaner console output during normal operation</li>
-        </ul>
-        
         <h5>🔌 Enhanced Connection UI</h5>
         <ul>
           <li>Added input fields for OBS WebSocket IP address and password</li>
@@ -385,7 +373,7 @@ function loadLocalChangelog() {
       </div>
       
       <div class="release-body">
-        <h5>�� Major Features</h5>
+        <h5>🚀 Major Features</h5>
         <ul>
           <li><strong>Node.js Server</strong> - Professional Express.js web server with security features</li>
           <li><strong>Bootstrap UI</strong> - Modern, responsive interface with Bootstrap 5</li>

@@ -11,9 +11,9 @@ let audioSources = [];
 let currentFPS = 0;
 let statsInterval = null;
 let audioSyncInterval = null;
-let muteRequests = new Map(); // Use module-level variable instead of window
-let muteOperationInProgress = false; // Flag to prevent interference with user mute operations
-let requestIdCounter = 0; // Counter for unique request IDs
+let muteRequests = new Map();
+let muteOperationInProgress = false;
+let requestIdCounter = 0;
 
 // Connection state management
 let connectionState = {
@@ -34,30 +34,23 @@ function initThemeSwitcher() {
   const themeBtns = document.querySelectorAll('.theme-btn');
   const savedTheme = localStorage.getItem('obs-theme') || 'ocean';
   
-  // Set initial theme immediately
+  // Set initial theme
   document.documentElement.setAttribute('data-theme', savedTheme);
   updateActiveThemeButton(savedTheme);
   
-  // Add click and touch handlers for better Safari/iPad support
+  // Add click and touch handlers
   themeBtns.forEach(btn => {
-    // Remove any existing listeners to prevent duplicates
     btn.removeEventListener('click', handleThemeClick);
     btn.removeEventListener('touchstart', handleThemeTouch);
     btn.removeEventListener('touchend', handleThemeTouch);
     
-    // Add new listeners with better mobile support
     btn.addEventListener('click', handleThemeClick);
     btn.addEventListener('touchstart', handleThemeTouch, { passive: false });
     btn.addEventListener('touchend', handleThemeTouch, { passive: false });
   });
   
-  // Force theme application for mobile devices
+  // Apply theme for mobile devices
   forceThemeApplication();
-  
-  // Additional mobile theme enforcement
-  setTimeout(() => {
-    forceThemeApplication();
-  }, 1000);
 }
 
 function handleThemeClick(e) {
@@ -68,29 +61,21 @@ function handleThemeClick(e) {
 }
 
 function handleThemeTouch(e) {
-  e.preventDefault(); // Prevent double-tap zoom
+  e.preventDefault();
   e.stopPropagation();
   const theme = e.currentTarget.getAttribute('data-theme');
   setTheme(theme);
 }
 
 function setTheme(theme) {
-  console.log('Setting theme:', theme);
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('obs-theme', theme);
   updateActiveThemeButton(theme);
   
-  // Force re-application for mobile devices
+  // Re-apply for mobile devices
   setTimeout(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    console.log('Theme re-applied:', theme);
-  }, 50);
-  
-  // Additional mobile enforcement
-  setTimeout(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    console.log('Theme enforced again:', theme);
-  }, 200);
+  }, 100);
 }
 
 function updateActiveThemeButton(activeTheme) {
@@ -117,7 +102,6 @@ function updateStatus(message, type = "connecting") {
   const loadingIcon = type === "connecting" ? '<div class="spinner-border spinner-border-sm me-2" role="status"></div>' : '';
   
   container.innerHTML = `<div class="alert ${alertClass}">${loadingIcon}${message}</div>`;
-  console.log("Status:", message);
 }
 
 async function computeAuthResponse(password, salt, challenge) {
@@ -169,7 +153,6 @@ async function toggleStream() {
 }
 
 async function toggleRecording() {
-  console.log('Toggle recording called, current state:', isRecording);
   const request = {
     op: 6,
     d: {
@@ -178,7 +161,6 @@ async function toggleRecording() {
     }
   };
   socket.send(JSON.stringify(request));
-  console.log('Recording toggle request sent:', request.d.requestType);
 }
 
 async function toggleReplayBuffer() {
@@ -204,21 +186,7 @@ async function getAudioSources() {
   socket.send(JSON.stringify(request));
 }
 
-// Debug function to get all inputs
-async function getAllInputs() {
-  const request = {
-    op: 6,
-    d: {
-      requestType: "GetInputList",
-      requestId: "all-inputs-" + Date.now()
-    }
-  };
-  socket.send(JSON.stringify(request));
-}
-
-// Function to get input mute status
 async function getInputMute(inputName) {
-  // Generate a truly unique request ID using counter + timestamp + random
   requestIdCounter++;
   const requestId = `input-mute-${Date.now()}-${requestIdCounter}-${Math.random().toString(36).substr(2, 9)}`;
   
@@ -233,21 +201,15 @@ async function getInputMute(inputName) {
     }
   };
   
-  // Store the input name for this request
   muteRequests.set(requestId, inputName);
-  
   socket.send(JSON.stringify(request));
 }
 
-
-
 async function toggleAudioMute(inputName) {
   if (!socket || socket.readyState !== WebSocket.OPEN) {
-    console.error("WebSocket not connected!");
     return;
   }
   
-  // Set flag to prevent periodic updates from interfering
   muteOperationInProgress = true;
   
   const request = {
@@ -264,51 +226,36 @@ async function toggleAudioMute(inputName) {
   try {
     socket.send(JSON.stringify(request));
   } catch (error) {
-    console.error("Failed to send mute toggle request:", error);
-    muteOperationInProgress = false; // Reset flag on error
+    muteOperationInProgress = false;
   }
 }
 
 async function setAudioVolume(inputName, volume) {
-  // Ensure volume is a number and convert to float
   const volumeValue = parseFloat(volume);
   
-  // Based on the user's feedback, OBS uses a different scale than -60 to 0 dB
-  // We need to apply the inverse of the scaling factor we used in the event handler
   let volumeMultiplier;
   let calculatedDb;
-  
-     let obsDb; // Declare obsDb at function scope
+  let obsDb;
    
-   if (volumeValue === 0) {
-     volumeMultiplier = 0; // Mute
-     calculatedDb = -60;
-     obsDb = -60;
-   } else if (volumeValue === 100) {
-     volumeMultiplier = 1; // Full volume (0 dB)
-     calculatedDb = 0;
-     obsDb = 0;
-   } else {
-     // Convert percentage to dB using our -60 to 0 dB scale
-     calculatedDb = (volumeValue / 100) * 60 - 60; // Linear interpolation
-     
-     // Apply the inverse of our human-friendly mapping
-     // Convert our slider percentage back to OBS's dB scale
-     
-     // Inverse of the power curve: obsDb = (sliderValue/100)^(1/1.5) * 60 - 60
-     const normalizedSlider = volumeValue / 100; // 0 to 1 range
-     const normalizedObsDb = Math.pow(normalizedSlider, 1/1.5); // Inverse power curve
-     obsDb = normalizedObsDb * 60 - 60; // Convert back to -60 to 0 dB range
-     
-     // Convert OBS's dB to multiplier: multiplier = 10^(obsDb/20)
-     volumeMultiplier = Math.pow(10, obsDb / 20);
-   }
-   
-
+  if (volumeValue === 0) {
+    volumeMultiplier = 0;
+    calculatedDb = -60;
+    obsDb = -60;
+  } else if (volumeValue === 100) {
+    volumeMultiplier = 1;
+    calculatedDb = 0;
+    obsDb = 0;
+  } else {
+    calculatedDb = (volumeValue / 100) * 60 - 60;
+    
+    const normalizedSlider = volumeValue / 100;
+    const normalizedObsDb = Math.pow(normalizedSlider, 1/1.5);
+    obsDb = normalizedObsDb * 60 - 60;
+    
+    volumeMultiplier = Math.pow(10, obsDb / 20);
+  }
   
-  // Check if socket is connected
   if (!socket || socket.readyState !== WebSocket.OPEN) {
-    console.error("WebSocket not connected!");
     return;
   }
   
@@ -326,7 +273,7 @@ async function setAudioVolume(inputName, volume) {
   try {
     socket.send(JSON.stringify(request));
   } catch (error) {
-    console.error("Failed to send volume set request:", error);
+    // Handle error silently
   }
 }
 
@@ -413,32 +360,23 @@ function createAudioSourceElement(source) {
   const audioDiv = document.createElement('div');
   audioDiv.className = 'audio-source d-flex align-items-center justify-content-between';
   
-  // Convert volume multiplier to linear percentage using the corrected scaling
   let sliderValue;
   let initialDb;
   if (source.inputVolumeMul === 0) {
-    sliderValue = 0; // Mute
+    sliderValue = 0;
     initialDb = -60;
   } else if (source.inputVolumeMul === 1) {
-    sliderValue = 100; // Full volume (0 dB)
+    sliderValue = 100;
     initialDb = 0;
   } else {
-    // Convert multiplier to dB: dB = 20 * log10(multiplier)
     const db = 20 * Math.log10(source.inputVolumeMul);
     initialDb = db;
     
-         // Apply the same human-friendly mapping
-     // Convert OBS's dB to a more intuitive percentage
-     
-     // Use the same power curve for consistency
-     const normalizedDb = (db + 60) / 60; // 0 to 1 range
-     sliderValue = Math.pow(normalizedDb, 1.5) * 100; // Power curve for more intuitive feel
-     
-     // Clamp to valid range
-     sliderValue = Math.max(0, Math.min(100, sliderValue));
+    const normalizedDb = (db + 60) / 60;
+    sliderValue = Math.pow(normalizedDb, 1.5) * 100;
+    sliderValue = Math.max(0, Math.min(100, sliderValue));
   }
   
-  // Create mute status indicator
   const muteStatusClass = source.inputMuted ? 'muted' : 'unmuted';
   const muteStatusText = source.inputMuted ? 'MUTED' : 'LIVE';
   
@@ -464,7 +402,6 @@ function createAudioSourceElement(source) {
     </div>
   `;
   
-  // Add event listeners instead of inline handlers
   const muteBtn = audioDiv.querySelector('.mute-btn');
   const volumeSlider = audioDiv.querySelector('.volume-slider');
   const dbValue = audioDiv.querySelector('.db-value');
@@ -477,16 +414,14 @@ function createAudioSourceElement(source) {
     setAudioVolume(source.inputName, e.target.value);
   });
   
-     // Add dB value display on slider interaction
-   volumeSlider.addEventListener('input', (e) => {
-     const volumeValue = parseFloat(e.target.value);
-     // Convert slider percentage to OBS dB using the inverse power curve
-     const normalizedSlider = volumeValue / 100; // 0 to 1 range
-     const normalizedObsDb = Math.pow(normalizedSlider, 1/1.5); // Inverse power curve
-     const obsDb = normalizedObsDb * 60 - 60; // Convert to -60 to 0 dB range
-     dbValue.textContent = `${obsDb.toFixed(1)} dB`;
-     dbValue.classList.add('show');
-   });
+  volumeSlider.addEventListener('input', (e) => {
+    const volumeValue = parseFloat(e.target.value);
+    const normalizedSlider = volumeValue / 100;
+    const normalizedObsDb = Math.pow(normalizedSlider, 1/1.5);
+    const obsDb = normalizedObsDb * 60 - 60;
+    dbValue.textContent = `${obsDb.toFixed(1)} dB`;
+    dbValue.classList.add('show');
+  });
   
   volumeSlider.addEventListener('mousedown', () => {
     dbValue.classList.add('show');
@@ -507,7 +442,6 @@ function createAudioSourceElement(source) {
 
 // Enhanced message handler
 function handleObsMessage(msg) {
-
   // Handle stream status
   if (msg.op === 7 && msg.d.requestType === "GetStreamStatus") {
     const isActive = msg.d.responseData?.outputActive || false;
@@ -533,7 +467,6 @@ function handleObsMessage(msg) {
   if (msg.op === 7 && msg.d.requestType === "GetInputList" && !msg.d.requestId?.includes("all-inputs")) {
     const inputs = msg.d.responseData?.inputs || [];
     
-    // More comprehensive audio source filtering
     audioSources = inputs.filter(input => {
       const inputKind = input.inputKind.toLowerCase();
       return inputKind.includes('audio') || 
@@ -549,7 +482,6 @@ function handleObsMessage(msg) {
              inputKind.includes('ffmpeg');
     });
     
-    // If this is a UI update request, update the existing controls with the fresh data
     const isUIUpdate = msg.d.requestId?.includes("update-ui");
     const isMuteStatusUpdate = msg.d.requestId?.includes("mute-status-update");
     
@@ -567,27 +499,24 @@ function handleObsMessage(msg) {
           <br><small class="text-muted">Total inputs found: ${inputs.length}</small>
         </div>
       `;
-         } else {
-       if (isUIUpdate) {
-         // Update existing controls without recreating them
-         updateExistingAudioControls(audioSources);
-       } else {
-         // Initial load - create all controls
-         audioContainer.innerHTML = '';
-         audioSources.forEach(source => {
-           audioContainer.appendChild(createAudioSourceElement(source));
-         });
-         
-         // Get mute status for all audio sources after creating the UI
-         setTimeout(() => {
-           if (socket && socket.readyState === WebSocket.OPEN) {
-             audioSources.forEach(source => {
-               getInputMute(source.inputName);
-             });
-           }
-         }, 100);
-       }
-     }
+    } else {
+      if (isUIUpdate) {
+        updateExistingAudioControls(audioSources);
+      } else {
+        audioContainer.innerHTML = '';
+        audioSources.forEach(source => {
+          audioContainer.appendChild(createAudioSourceElement(source));
+        });
+        
+        setTimeout(() => {
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            audioSources.forEach(source => {
+              getInputMute(source.inputName);
+            });
+          }
+        }, 100);
+      }
+    }
   }
 
   // Handle stats
@@ -601,82 +530,59 @@ function handleObsMessage(msg) {
   // Handle stream/record toggle responses
   if (msg.op === 7 && (msg.d.requestType === "StartStream" || msg.d.requestType === "StopStream")) {
     if (!msg.d.error) {
-      // Add a small delay to ensure OBS has processed the state change
       setTimeout(() => {
-        getStreamStatus(); // Refresh status
+        getStreamStatus();
       }, 500);
     }
   }
 
   if (msg.op === 7 && (msg.d.requestType === "StartRecord" || msg.d.requestType === "StopRecord")) {
     if (!msg.d.error) {
-      // Add a small delay to ensure OBS has processed the state change
       setTimeout(() => {
-        getRecordStatus(); // Refresh status
+        getRecordStatus();
       }, 500);
     }
   }
 
   if (msg.op === 7 && (msg.d.requestType === "StartReplayBuffer" || msg.d.requestType === "StopReplayBuffer")) {
     if (!msg.d.error) {
-      // Add a small delay to ensure OBS has processed the state change
       setTimeout(() => {
-        getReplayBufferStatus(); // Refresh status
+        getReplayBufferStatus();
       }, 500);
-    }
-  }
-
-  // Handle test connection response
-  if (msg.op === 7 && msg.d.requestType === "GetVersion") {
-    if (msg.d.error) {
-      console.error("OBS WebSocket test failed:", msg.d.error);
     }
   }
 
   // Handle audio control responses
   if (msg.op === 7 && msg.d.requestType === "ToggleInputMute") {
     if (!msg.d.error) {
-      // Get the updated mute status for all audio sources
       setTimeout(() => {
         if (socket && socket.readyState === WebSocket.OPEN && audioSources.length > 0) {
           audioSources.forEach(source => {
             getInputMute(source.inputName);
           });
         }
-        // Reset the flag after a delay to allow the GetInputMute responses to come back
         setTimeout(() => {
           muteOperationInProgress = false;
         }, 500);
       }, 100);
     } else {
-      console.error("Mute toggle failed:", msg.d.error);
-      muteOperationInProgress = false; // Reset flag on error
-    }
-  }
-
-  if (msg.op === 7 && msg.d.requestType === "SetInputVolume") {
-    if (msg.d.error) {
-      console.error("Volume set failed:", msg.d.error);
+      muteOperationInProgress = false;
     }
   }
 
   // Handle input mute status response
   if (msg.op === 7 && msg.d.requestType === "GetInputMute") {
     if (!msg.d.error && msg.d.responseData) {
-      // Get the input name from our stored request mapping
       const requestId = msg.d.requestId;
       const inputName = muteRequests.get(requestId);
       const inputMuted = msg.d.responseData.inputMuted;
       
       if (inputName) {
-        // Update the specific audio source
         const muteBtn = document.querySelector(`.mute-btn[data-input-name="${inputName}"]`);
         if (muteBtn) {
-          // Update button text and class
           muteBtn.textContent = inputMuted ? 'Unmute' : 'Mute';
           muteBtn.className = `btn btn-sm audio-btn mute-btn ${inputMuted ? 'muted' : ''}`;
           
-          // Update mute status indicator
           const muteStatus = muteBtn.parentElement.querySelector('.mute-status');
           if (muteStatus) {
             const muteStatusText = muteStatus.querySelector('.mute-status-text');
@@ -687,18 +593,16 @@ function handleObsMessage(msg) {
           }
         }
         
-        // Clean up the request mapping
         muteRequests.delete(requestId);
       }
     }
   }
 
-  // Handle recording state change events - FIXED: Now properly updates UI immediately
+  // Handle recording state change events
   if (msg.op === 5 && msg.d.eventType === "RecordStateChanged") {
     const eventData = msg.d.eventData;
     const isActive = eventData.outputState === 'OBS_RECORDING_STATE_RECORDING';
     updateRecordingStatus(isActive ? 'Active' : 'Inactive');
-    console.log('Recording state changed:', eventData.outputState, 'UI updated to:', isActive ? 'Active' : 'Inactive');
   }
 
   // Handle stream state change events
@@ -713,42 +617,20 @@ function handleObsMessage(msg) {
   if (msg.op === 5 && msg.d.eventType === "InputVolumeChanged") {
     const eventData = msg.d.eventData;
     
-    // Update the specific slider for this input
     const volumeSlider = document.querySelector(`[data-input-name="${eventData.inputName}"].volume-slider`);
     if (volumeSlider) {
-      // Use OBS's reported dB value directly instead of calculating our own
       const obsDb = eventData.inputVolumeDb;
       
-      // Convert OBS's dB value to slider percentage
-      // OBS appears to use a different scale than -60 to 0 dB
-      // Let's determine the actual scale by analyzing the values
       let newValue;
       
       if (eventData.inputVolumeMul === 0) {
-        newValue = 0; // Mute
+        newValue = 0;
       } else if (eventData.inputVolumeMul === 1) {
-        newValue = 100; // Full volume
+        newValue = 100;
       } else {
-                 // Make the scaling more human-friendly
-         // Instead of linear scaling, let's use a more intuitive mapping
-         // where lower volumes (like 14%) map to lower slider positions
-         
-         // Convert OBS's dB to a more intuitive percentage
-         // Use a curve that feels more natural to humans
-         
-         // For OBS dB values, let's create a more intuitive mapping:
-         // -60 dB (mute) = 0%
-         // -30 dB = ~25% (instead of 50%)
-         // -20 dB = ~50%
-         // -10 dB = ~75%
-         // 0 dB = 100%
-         
-         // Use a power curve to make it feel more natural
-         const normalizedDb = (obsDb + 60) / 60; // 0 to 1 range
-         newValue = Math.pow(normalizedDb, 1.5) * 100; // Power curve for more intuitive feel
-         
-         // Clamp to valid range
-         newValue = Math.max(0, Math.min(100, newValue));
+        const normalizedDb = (obsDb + 60) / 60;
+        newValue = Math.pow(normalizedDb, 1.5) * 100;
+        newValue = Math.max(0, Math.min(100, newValue));
       }
       
       const currentValue = parseFloat(volumeSlider.value);
@@ -757,13 +639,11 @@ function handleObsMessage(msg) {
         volumeSlider.value = newValue;
       }
       
-      // Update audio level indicator
       const audioLevelFill = volumeSlider.parentElement.parentElement.querySelector('.audio-level-fill');
       if (audioLevelFill) {
         audioLevelFill.style.width = `${newValue}%`;
       }
       
-      // Update dB value display - use OBS's reported dB
       const dbValue = volumeSlider.parentElement.querySelector('.db-value');
       if (dbValue) {
         dbValue.textContent = `${obsDb.toFixed(1)} dB`;
@@ -774,15 +654,11 @@ function handleObsMessage(msg) {
 
 // Enhanced connection function
 async function connect() {
-  // Check if we already have an active connection
   if (socket && socket.readyState === WebSocket.OPEN) {
-    console.log('Connection already exists and is open, skipping new connection');
     return;
   }
   
-  // If there's an existing socket that's not open, close it properly
   if (socket) {
-    console.log('Closing existing socket before creating new connection');
     socket.close();
     socket = null;
   }
@@ -791,34 +667,30 @@ async function connect() {
   updateConnectionStatus("Connecting");
   socket = new WebSocket(`ws://${obsIP}:4455`);
 
-     socket.onopen = () => {
-     updateStatus("Connected! Authenticating...", "connecting");
-     updateConnectionStatus("Connected");
-     
-     // Save connection state
-     connectionState.isConnected = true;
-     connectionState.obsIP = obsIP;
-     connectionState.password = password;
-     connectionState.lastConnected = new Date().toISOString();
-     localStorage.setItem('obsConnectionState', JSON.stringify(connectionState));
-     
-     // Reset reconnection attempts on successful connection
-     reconnectAttempts = 0;
-     
-     // Update button state
-     const connectBtn = document.getElementById('connect-btn');
-     const disconnectBtn = document.getElementById('disconnect-btn');
-     if (connectBtn) {
-       connectBtn.disabled = true;
-       connectBtn.innerHTML = '<i class="bi bi-wifi"></i> Connected';
-     }
-     if (disconnectBtn) disconnectBtn.disabled = false;
-   };
+  socket.onopen = () => {
+    updateStatus("Connected! Authenticating...", "connecting");
+    updateConnectionStatus("Connected");
+    
+    connectionState.isConnected = true;
+    connectionState.obsIP = obsIP;
+    connectionState.password = password;
+    connectionState.lastConnected = new Date().toISOString();
+    localStorage.setItem('obsConnectionState', JSON.stringify(connectionState));
+    
+    reconnectAttempts = 0;
+    
+    const connectBtn = document.getElementById('connect-btn');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    if (connectBtn) {
+      connectBtn.disabled = true;
+      connectBtn.innerHTML = '<i class="bi bi-wifi"></i> Connected';
+    }
+    if (disconnectBtn) disconnectBtn.disabled = false;
+  };
 
   socket.onmessage = async (event) => {
     const msg = JSON.parse(event.data);
 
-    // Handle identification
     if (msg.op === 0) {
       const { authentication, rpcVersion } = msg.d;
       const { challenge, salt } = authentication;
@@ -834,11 +706,9 @@ async function connect() {
       socket.send(JSON.stringify(identifyMessage));
     }
 
-    // Handle identified
     if (msg.op === 2) {
       updateStatus("Authenticated! Loading data...", "connecting");
       
-      // Load all data
       getSceneList();
       getAudioSources();
       getStreamStatus();
@@ -846,30 +716,26 @@ async function connect() {
       getReplayBufferStatus();
       getStats();
       
-      // Set up periodic updates
       statsInterval = setInterval(() => {
         if (socket && socket.readyState === WebSocket.OPEN) {
           getStats();
         }
-      }, 2000); // Update stats every 2 seconds
+      }, 2000);
       
-      // Set up periodic audio source updates to sync with OBS
       audioSyncInterval = setInterval(() => {
         if (socket && socket.readyState === WebSocket.OPEN) {
           updateAudioSourceUI();
         }
-      }, 2000); // Update audio sources every 2 seconds
+      }, 2000);
     }
 
-    // Handle all other messages
     handleObsMessage(msg);
 
-    // Original scene handling
     if (msg.op === 7 && msg.d.requestType === "GetSceneList") {
       if (msg.d.responseData && msg.d.responseData.scenes) {
         const scenes = msg.d.responseData.scenes;
         const container = document.getElementById("scene-buttons");
-        container.innerHTML = ""; // Clear loading message
+        container.innerHTML = "";
         scenes.forEach(s => {
           container.appendChild(createSceneButton(s.sceneName));
         });
@@ -878,33 +744,20 @@ async function connect() {
       }
     }
 
-    // Handle errors
     if (msg.op === 7 && msg.d.error) {
-      console.error("Request error:", msg.d);
       updateStatus(`Error: ${msg.d.error}`, "error");
     }
 
-    // Handle authentication failure
     if (msg.op === 7 && msg.d.error && msg.d.error.includes("authentication")) {
-      console.error("Authentication failed:", msg.d.error);
       updateStatus("Authentication failed - check password", "error");
       updateConnectionStatus("Auth Failed");
-    }
-
-    // Handle scene switch response
-    if (msg.op === 7 && msg.d.requestType === "SetCurrentProgramScene") {
-      if (msg.d.error) {
-        console.error("Scene switch error:", msg.d.error);
-      }
     }
   };
 
   socket.onerror = (err) => {
-    console.error("WebSocket error:", err);
     updateStatus("Connection error - check OBS WebSocket server and settings", "error");
     updateConnectionStatus("Error");
     
-    // Reset connect button
     const connectBtn = document.getElementById('connect-btn');
     if (connectBtn) {
       connectBtn.disabled = false;
@@ -916,16 +769,10 @@ async function connect() {
     updateStatus("Connection closed - make sure OBS is running and WebSocket server is enabled", "error");
     updateConnectionStatus("Disconnected");
     
-    // Only mark as disconnected if this wasn't a page navigation
-    // We keep the connection state in localStorage for auto-reconnect
-    // The connectionState.isConnected will be checked during page visibility changes
-    
-    // Start reconnection timer if auto-reconnect is enabled
     if (autoReconnectEnabled && connectionState.lastConnected) {
       startReconnectTimer();
     }
     
-    // Reset connect button
     const connectBtn = document.getElementById('connect-btn');
     if (connectBtn) {
       connectBtn.disabled = false;
@@ -933,84 +780,64 @@ async function connect() {
     }
   };
 
-  // Add connection timeout
   setTimeout(() => {
     if (socket && socket.readyState !== WebSocket.OPEN) {
       updateStatus("Connection timeout - check OBS WebSocket settings", "error");
       updateConnectionStatus("Timeout");
       
-      // Reset connect button
       const connectBtn = document.getElementById('connect-btn');
       if (connectBtn) {
         connectBtn.disabled = false;
         connectBtn.innerHTML = '<i class="bi bi-wifi"></i> Connect';
       }
     }
-  }, 5000); // 5 second timeout
+  }, 5000);
 }
 
-      // Initialize the application
-   document.addEventListener('DOMContentLoaded', function() {
-     // Load version information
-     loadVersionInfo();
-     
-     // Force theme application first
-     forceThemeApplication();
-     
-     // Initialize theme switcher
-     initThemeSwitcher();
-     
-     // Initialize page visibility handling
-     initPageVisibilityHandling();
-     
-     // Restore connection state from localStorage
-     restoreConnectionState();
-     
-     // Initialize QR code scanner
-     initQRScanner();
-     
-     // Set up disconnect/reconnect button event listeners
-     const disconnectBtn = document.getElementById('disconnect-btn');
-     
-     if (disconnectBtn) {
-       disconnectBtn.addEventListener('click', disconnectFromOBS);
-       disconnectBtn.disabled = true;
-     }
-     
-     // Set up connect button event listener
-     const connectBtn = document.getElementById('connect-btn');
-     if (connectBtn) {
-       connectBtn.addEventListener('click', () => {
-         // Get values from input fields
-         obsIP = document.getElementById('obs-ip').value || 'localhost';
-         password = document.getElementById('obs-password').value || '';
-         
-         // Update button state
-         connectBtn.disabled = true;
-         connectBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Connecting...';
-         
-         // Start connection
-         connect();
-       });
-     }
-     
-     // Set up stream/record control button event listeners
-     const streamBtn = document.getElementById('stream-btn');
-     const recordBtn = document.getElementById('record-btn');
-     const replayBtn = document.getElementById('replay-btn');
-     
-     if (streamBtn) {
-       streamBtn.addEventListener('click', toggleStream);
-     }
-     
-     if (recordBtn) {
-       recordBtn.addEventListener('click', toggleRecording);
-     }
-     
-     if (replayBtn) {
-       replayBtn.addEventListener('click', toggleReplayBuffer);
-     }
-   });
+// Initialize the application
+document.addEventListener('DOMContentLoaded', function() {
+  loadVersionInfo();
+  forceThemeApplication();
+  initThemeSwitcher();
+  initPageVisibilityHandling();
+  restoreConnectionState();
+  initQRScanner();
+  
+  const disconnectBtn = document.getElementById('disconnect-btn');
+  if (disconnectBtn) {
+    disconnectBtn.addEventListener('click', disconnectFromOBS);
+    disconnectBtn.disabled = true;
+  }
+  
+  const connectBtn = document.getElementById('connect-btn');
+  if (connectBtn) {
+    connectBtn.addEventListener('click', () => {
+      obsIP = document.getElementById('obs-ip').value || 'localhost';
+      password = document.getElementById('obs-password').value || '';
+      
+      connectBtn.disabled = true;
+      connectBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Connecting...';
+      
+      connect();
+    });
+  }
+  
+  const streamBtn = document.getElementById('stream-btn');
+  const recordBtn = document.getElementById('record-btn');
+  const replayBtn = document.getElementById('replay-btn');
+  
+  if (streamBtn) {
+    streamBtn.addEventListener('click', toggleStream);
+  }
+  
+  if (recordBtn) {
+    recordBtn.addEventListener('click', toggleRecording);
+  }
+  
+  if (replayBtn) {
+    replayBtn.addEventListener('click', toggleReplayBuffer);
+  }
+});
 
 // Load version information from package.json
 async function loadVersionInfo() {
@@ -1025,13 +852,12 @@ async function loadVersionInfo() {
       }
     }
   } catch (error) {
-    console.error('Failed to load version info:', error);
+    // Handle error silently
   }
 }
 
 // Function to update audio source UI without full refresh
 async function updateAudioSourceUI() {
-  // Get current audio sources to update button states
   const request = {
     op: 6,
     d: {
@@ -1044,68 +870,55 @@ async function updateAudioSourceUI() {
 
 // Function to update existing audio controls without recreating them
 function updateExistingAudioControls(audioSources) {
-  // Skip mute status updates if a user-initiated mute operation is in progress
   if (muteOperationInProgress) {
     return;
   }
   
-  // Since GetInputList doesn't provide mute/volume status, we need to request it for each source
   audioSources.forEach(source => {
-    // Request mute status for this source
     getInputMute(source.inputName);
-    
-    // Note: Volume updates will come from InputVolumeChanged events
-    // We don't need to request volume status here
   });
 }
 
-
-
-   // Connection management functions
-  function disconnectFromOBS() {
-    // Clear intervals to prevent null socket access
-    if (statsInterval) {
-      clearInterval(statsInterval);
-      statsInterval = null;
-    }
-    if (audioSyncInterval) {
-      clearInterval(audioSyncInterval);
-      audioSyncInterval = null;
-    }
-    
-    if (socket) {
-      socket.close();
-      socket = null;
-    }
-    
-    // Clear connection state
-    connectionState.isConnected = false;
-    connectionState.lastConnected = null;
-    localStorage.removeItem('obsConnectionState');
-    
-    updateConnectionStatus("Disconnected");
-    updateStatus("Disconnected from OBS", "error");
-    
-    // Clear all UI elements
-    const sceneContainer = document.getElementById("scene-buttons");
-    const audioContainer = document.getElementById('audio-sources');
-    sceneContainer.innerHTML = '<div class="alert alert-warning">Disconnected from OBS</div>';
-    audioContainer.innerHTML = '<div class="alert alert-warning">Disconnected from OBS</div>';
-    
-    // Reset status indicators
-    updateStreamStatus('Inactive');
-    updateRecordingStatus('Inactive');
-    updateFPSStatus(0);
-    
-    // Update button state
-    const connectBtn = document.getElementById('connect-btn');
-    const disconnectBtn = document.getElementById('disconnect-btn');
-    if (connectBtn) {
-      connectBtn.disabled = false;
-      connectBtn.innerHTML = '<i class="bi bi-wifi"></i> Connect';
-    }
-    if (disconnectBtn) disconnectBtn.disabled = true;
+// Connection management functions
+function disconnectFromOBS() {
+  if (statsInterval) {
+    clearInterval(statsInterval);
+    statsInterval = null;
   }
+  if (audioSyncInterval) {
+    clearInterval(audioSyncInterval);
+    audioSyncInterval = null;
+  }
+  
+  if (socket) {
+    socket.close();
+    socket = null;
+  }
+  
+  connectionState.isConnected = false;
+  connectionState.lastConnected = null;
+  localStorage.removeItem('obsConnectionState');
+  
+  updateConnectionStatus("Disconnected");
+  updateStatus("Disconnected from OBS", "error");
+  
+  const sceneContainer = document.getElementById("scene-buttons");
+  const audioContainer = document.getElementById('audio-sources');
+  sceneContainer.innerHTML = '<div class="alert alert-warning">Disconnected from OBS</div>';
+  audioContainer.innerHTML = '<div class="alert alert-warning">Disconnected from OBS</div>';
+  
+  updateStreamStatus('Inactive');
+  updateRecordingStatus('Inactive');
+  updateFPSStatus(0);
+  
+  const connectBtn = document.getElementById('connect-btn');
+  const disconnectBtn = document.getElementById('disconnect-btn');
+  if (connectBtn) {
+    connectBtn.disabled = false;
+    connectBtn.innerHTML = '<i class="bi bi-wifi"></i> Connect';
+  }
+  if (disconnectBtn) disconnectBtn.disabled = true;
+}
 
 // Function to restore connection state from localStorage
 function restoreConnectionState() {
@@ -1115,7 +928,6 @@ function restoreConnectionState() {
       const state = JSON.parse(savedState);
       connectionState = state;
       
-      // Restore connection fields if they exist
       const obsIpField = document.getElementById('obs-ip');
       const obsPasswordField = document.getElementById('obs-password');
       
@@ -1129,35 +941,25 @@ function restoreConnectionState() {
         password = state.password;
       }
       
-      // If we were previously connected, check if we need to reconnect
       if (state.isConnected && state.lastConnected) {
         const lastConnected = new Date(state.lastConnected);
         const timeSinceConnection = Date.now() - lastConnected.getTime();
         
-        // If connection was within the last 5 minutes, check if we need to reconnect
         if (timeSinceConnection < 5 * 60 * 1000) {
-          console.log('Previous connection found, checking if reconnection is needed...');
-          // Only attempt reconnection if we don't already have an active connection
           if (!socket || socket.readyState !== WebSocket.OPEN) {
-            console.log('No active connection found, attempting auto-reconnection...');
             setTimeout(() => {
               if (autoReconnectEnabled) {
                 attemptReconnect();
               }
-            }, 1000); // Small delay to ensure page is fully loaded
-          } else {
-            console.log('Active connection already exists, skipping reconnection');
+            }, 1000);
           }
         } else {
-          // Connection is too old, clear it
-          console.log('Previous connection is too old, clearing...');
           connectionState.isConnected = false;
           connectionState.lastConnected = null;
           localStorage.removeItem('obsConnectionState');
         }
       }
     } catch (error) {
-      console.error('Failed to restore connection state:', error);
       localStorage.removeItem('obsConnectionState');
     }
   }
@@ -1166,14 +968,11 @@ function restoreConnectionState() {
 // Connection recovery functions
 function attemptReconnect() {
   if (!autoReconnectEnabled || reconnectAttempts >= maxReconnectAttempts) {
-    console.log('Auto-reconnect disabled or max attempts reached');
     return;
   }
   
   reconnectAttempts++;
-  console.log(`Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`);
   
-  // Get saved connection details
   const savedState = localStorage.getItem('obsConnectionState');
   if (savedState) {
     try {
@@ -1181,16 +980,14 @@ function attemptReconnect() {
       obsIP = state.obsIP || 'localhost';
       password = state.password || '';
       
-      // Update UI fields
       const obsIpField = document.getElementById('obs-ip');
       const obsPasswordField = document.getElementById('obs-password');
       if (obsIpField) obsIpField.value = obsIP;
       if (obsPasswordField) obsPasswordField.value = password;
       
-      // Attempt connection
       connect();
     } catch (error) {
-      console.error('Failed to restore connection for auto-reconnect:', error);
+      // Handle error silently
     }
   }
 }
@@ -1202,118 +999,56 @@ function startReconnectTimer() {
   
   reconnectInterval = setInterval(() => {
     if (socket && socket.readyState === WebSocket.OPEN) {
-      // Connection is good, clear timer
       clearInterval(reconnectInterval);
       reconnectInterval = null;
       reconnectAttempts = 0;
       return;
     }
     
-    // Check if we should attempt reconnection
     if (autoReconnectEnabled && reconnectAttempts < maxReconnectAttempts) {
       attemptReconnect();
     } else {
       clearInterval(reconnectInterval);
       reconnectInterval = null;
     }
-  }, 5000); // Check every 5 seconds
+  }, 5000);
 }
 
 // Page visibility API handling
 function handlePageVisibilityChange() {
   if (document.visibilityState === 'visible') {
-    console.log('Page became visible, checking connection and theme...');
-    
-    // Reapply theme for mobile devices
     forceThemeApplication();
     
-    // Check if we should attempt to reconnect
     if (connectionState.isConnected && connectionState.lastConnected) {
       const lastConnected = new Date(connectionState.lastConnected);
       const timeSinceConnection = Date.now() - lastConnected.getTime();
       
-      // If connection was within the last 5 minutes, check if reconnection is needed
       if (timeSinceConnection < 5 * 60 * 1000) {
-        console.log('Page visible and recent connection found, checking if reconnection is needed...');
-        // Only attempt reconnection if we don't already have an active connection
         if (!socket || socket.readyState !== WebSocket.OPEN) {
-          console.log('No active connection found, attempting reconnection...');
           if (autoReconnectEnabled) {
             attemptReconnect();
           }
-        } else {
-          console.log('Active connection already exists, skipping reconnection');
         }
       } else {
-        // Connection is too old, clear it
-        console.log('Previous connection is too old, clearing...');
         connectionState.isConnected = false;
         connectionState.lastConnected = null;
         localStorage.removeItem('obsConnectionState');
       }
     }
-  } else {
-    console.log('Page became hidden');
   }
 }
 
 // Initialize page visibility handling
 function initPageVisibilityHandling() {
-  // Handle page visibility changes
   document.addEventListener('visibilitychange', handlePageVisibilityChange);
   
-  // Handle page focus/blur events
   window.addEventListener('focus', () => {
-    console.log('Window focused - checking connection');
     if (connectionState.isConnected && (!socket || socket.readyState !== WebSocket.OPEN)) {
       reconnectAttempts = 0;
       attemptReconnect();
     }
   });
-  
-  window.addEventListener('blur', () => {
-    console.log('Window blurred - maintaining connection');
-  });
 }
-
-   // Global functions for debugging (accessible from browser console)
-  window.getAudioSources = getAudioSources;
-  window.getAllInputs = getAllInputs;
-  window.disconnectFromOBS = disconnectFromOBS;
-  window.checkMuteRequests = () => {
-    console.log("Current muteRequests state:");
-    console.log(`  - Size: ${muteRequests.size}`);
-    console.log(`  - Keys: ${Array.from(muteRequests.keys())}`);
-    console.log(`  - Values: ${Array.from(muteRequests.values())}`);
-    console.log(`  - muteOperationInProgress: ${muteOperationInProgress}`);
-    console.log(`  - requestIdCounter: ${requestIdCounter}`);
-  };
-  
-  // Add connection status checker
-  window.checkConnectionStatus = () => {
-    console.log("=== Connection Status ===");
-    console.log(`Socket exists: ${!!socket}`);
-    if (socket) {
-      console.log(`Socket readyState: ${socket.readyState}`);
-      console.log(`Socket URL: ${socket.url}`);
-    }
-    console.log(`Connection state:`, connectionState);
-    console.log(`Auto-reconnect enabled: ${autoReconnectEnabled}`);
-    console.log(`Reconnect attempts: ${reconnectAttempts}/${maxReconnectAttempts}`);
-    console.log(`Reconnect interval active: ${!!reconnectInterval}`);
-    console.log(`Current OBS IP: ${obsIP}`);
-    console.log(`Password set: ${!!password}`);
-  };
-  
-  // Add theme checker
-  window.checkThemeStatus = () => {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const savedTheme = localStorage.getItem('obs-theme');
-    console.log("=== Theme Status ===");
-    console.log(`Current theme: ${currentTheme}`);
-    console.log(`Saved theme: ${savedTheme}`);
-    console.log(`Theme applied: ${currentTheme === savedTheme}`);
-  };
 
 // QR Code Scanner functionality
 let qrStream = null;
@@ -1329,7 +1064,6 @@ function initQRScanner() {
   
   if (qrManualBtn) {
     qrManualBtn.addEventListener('click', () => {
-      // Close modal and focus on IP field
       const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
       if (modal) {
         modal.hide();
@@ -1343,7 +1077,6 @@ function openQRScanner() {
   const modal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
   modal.show();
   
-  // Start camera after modal is shown
   setTimeout(() => {
     startQRScanner();
   }, 500);
@@ -1354,30 +1087,25 @@ async function startQRScanner() {
   const status = document.getElementById('qr-status');
   
   try {
-    // Check if getUserMedia is supported
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       throw new Error('Camera access not supported in this browser');
     }
     
-    // Request camera access with better mobile support
     const constraints = {
       video: {
-        facingMode: { ideal: 'environment' }, // Use back camera on mobile
+        facingMode: { ideal: 'environment' },
         width: { ideal: 1280, min: 320, max: 1920 },
         height: { ideal: 720, min: 240, max: 1080 },
         aspectRatio: { ideal: 16/9, min: 1, max: 2 }
       }
     };
     
-    // Try to get camera access with fallback options
     try {
       qrStream = await navigator.mediaDevices.getUserMedia(constraints);
     } catch (fallbackError) {
-      console.log('Primary camera access failed, trying fallback...');
-      // Fallback to any available camera
       const fallbackConstraints = {
         video: {
-          facingMode: 'user', // Try front camera
+          facingMode: 'user',
           width: { ideal: 640, min: 320 },
           height: { ideal: 480, min: 240 }
         }
@@ -1386,23 +1114,18 @@ async function startQRScanner() {
       try {
         qrStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
       } catch (secondFallbackError) {
-        console.log('Front camera failed, trying basic camera...');
-        // Last resort - any camera
         qrStream = await navigator.mediaDevices.getUserMedia({ video: true });
       }
     }
     
-    // Set video source
     video.srcObject = qrStream;
     
-    // Wait for video to be ready
     await new Promise((resolve, reject) => {
       video.onloadedmetadata = () => {
         video.play().then(resolve).catch(reject);
       };
       video.onerror = reject;
       
-      // Timeout after 10 seconds
       setTimeout(() => reject(new Error('Video loading timeout')), 10000);
     });
     
@@ -1411,12 +1134,9 @@ async function startQRScanner() {
     status.innerHTML = '<i class="bi bi-camera"></i> Camera active. Point at QR code...';
     status.className = 'alert alert-success';
     
-    // Start scanning
     scanQRCode();
     
   } catch (error) {
-    console.error('Camera access error:', error);
-    
     let errorMessage = 'Camera access failed. ';
     
     if (error.name === 'NotAllowedError') {
@@ -1436,7 +1156,6 @@ async function startQRScanner() {
     status.innerHTML = `<i class="bi bi-exclamation-triangle"></i> ${errorMessage}`;
     status.className = 'alert alert-warning';
     
-    // Add manual entry button as fallback
     const manualBtn = document.getElementById('qr-manual-btn');
     if (manualBtn) {
       manualBtn.style.display = 'block';
@@ -1453,7 +1172,6 @@ function scanQRCode() {
   const context = canvas.getContext('2d');
   
   if (video.videoWidth === 0) {
-    // Video not ready yet, try again
     setTimeout(scanQRCode, 100);
     return;
   }
@@ -1466,50 +1184,39 @@ function scanQRCode() {
   const code = jsQR(imageData.data, imageData.width, imageData.height);
   
   if (code) {
-    // QR code found!
     handleQRCodeResult(code.data);
     return;
   }
   
-  // Continue scanning
   setTimeout(scanQRCode, 100);
 }
 
 function handleQRCodeResult(qrData) {
-  console.log('QR Code detected:', qrData);
-  
-  // Parse OBS WebSocket URL format: obsws://localhost:4455/SERVER-PASSWORD
   const obsUrlPattern = /^obsws:\/\/([^:]+):(\d+)\/(.+)$/;
   const match = qrData.match(obsUrlPattern);
   
   if (match) {
     const [, host, port, password] = match;
     
-    // Update form fields
     document.getElementById('obs-ip').value = host;
     document.getElementById('obs-password').value = password;
     
-    // Close modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
     if (modal) {
       modal.hide();
     }
     
-    // Show success message
     const status = document.getElementById('qr-status');
     status.innerHTML = '<i class="bi bi-check-circle"></i> QR code scanned successfully! Connection details filled.';
     status.className = 'alert alert-success';
     
-    // Stop scanning
     stopQRScanner();
     
   } else {
-    // Invalid QR code format
     const status = document.getElementById('qr-status');
     status.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Invalid QR code format. Expected: obsws://host:port/password';
     status.className = 'alert alert-warning';
     
-    // Continue scanning
     setTimeout(() => {
       status.innerHTML = '<i class="bi bi-camera"></i> Camera active. Point at QR code...';
       status.className = 'alert alert-success';
@@ -1543,41 +1250,11 @@ document.addEventListener('DOMContentLoaded', function() {
 function forceThemeApplication() {
   const savedTheme = localStorage.getItem('obs-theme') || 'ocean';
   
-  console.log('Force applying theme:', savedTheme);
-  
-  // Apply theme multiple times to ensure it sticks on mobile
   document.documentElement.setAttribute('data-theme', savedTheme);
-  
-  // Force a reflow to ensure the theme is applied
   document.documentElement.offsetHeight;
   
-  // Apply again after a short delay
   setTimeout(() => {
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateActiveThemeButton(savedTheme);
-    console.log('Theme re-applied:', savedTheme);
-  }, 50);
-  
-  // Apply one more time after a longer delay for stubborn mobile browsers
-  setTimeout(() => {
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    console.log('Theme enforced again:', savedTheme);
-  }, 200);
-  
-  // Additional mobile enforcement
-  setTimeout(() => {
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    updateActiveThemeButton(savedTheme);
-    console.log('Final theme enforcement:', savedTheme);
-  }, 1000);
-  
-  // Check if theme was actually applied
-  setTimeout(() => {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    console.log(`Theme verification - Current: ${currentTheme}, Expected: ${savedTheme}`);
-    if (currentTheme !== savedTheme) {
-      console.log('Theme mismatch detected, reapplying...');
-      document.documentElement.setAttribute('data-theme', savedTheme);
-    }
-  }, 1500);
+  }, 100);
 } 
