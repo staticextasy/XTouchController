@@ -1,7 +1,7 @@
-// CONFIGURATION - Update these values for your setup
-const password = ""; // Leave empty if no password, or enter your OBS WebSocket password
-const obsIP = "localhost"; // Use "localhost" if OBS is on the same PC, or enter the IP address
+// Global variables
 let socket;
+let obsIP = "localhost";
+let password = "";
 
 // Global state variables
 let isStreaming = false;
@@ -85,7 +85,6 @@ function getSceneList() {
       requestId: "scene-list-" + Date.now()
     }
   };
-  console.log("Requesting scene list:", request);
   socket.send(JSON.stringify(request));
 }
 
@@ -100,7 +99,6 @@ function switchScene(sceneName) {
       }
     }
   };
-  console.log("Switching to scene:", sceneName, request);
   socket.send(JSON.stringify(request));
 }
 
@@ -113,7 +111,6 @@ async function toggleStream() {
       requestId: "stream-toggle-" + Date.now()
     }
   };
-  console.log(isStreaming ? "Stopping stream..." : "Starting stream...");
   socket.send(JSON.stringify(request));
 }
 
@@ -125,7 +122,6 @@ async function toggleRecording() {
       requestId: "record-toggle-" + Date.now()
     }
   };
-  console.log(isRecording ? "Stopping recording..." : "Starting recording...");
   socket.send(JSON.stringify(request));
 }
 
@@ -137,7 +133,6 @@ async function toggleReplayBuffer() {
       requestId: "replay-toggle-" + Date.now()
     }
   };
-  console.log(isReplayBufferActive ? "Stopping replay buffer..." : "Starting replay buffer...");
   socket.send(JSON.stringify(request));
 }
 
@@ -150,7 +145,6 @@ async function getAudioSources() {
       requestId: "audio-sources-" + Date.now()
     }
   };
-  console.log("Requesting input list for audio sources...");
   socket.send(JSON.stringify(request));
 }
 
@@ -163,7 +157,6 @@ async function getAllInputs() {
       requestId: "all-inputs-" + Date.now()
     }
   };
-  console.log("Requesting all inputs for debugging...");
   socket.send(JSON.stringify(request));
 }
 
@@ -183,26 +176,15 @@ async function getInputMute(inputName) {
       }
     }
   };
-  console.log(`Getting mute status for: ${inputName} with requestId: ${requestId}`);
-  console.log(`🔒 muteOperationInProgress: ${muteOperationInProgress}`);
   
   // Store the input name for this request
   muteRequests.set(requestId, inputName);
-  console.log(`📝 Stored requestId: ${requestId} -> ${inputName}`);
-  console.log(`📝 Total stored requests: ${muteRequests.size}`);
-  console.log(`📝 Map contents after storing:`, {
-    size: muteRequests.size,
-    keys: Array.from(muteRequests.keys()),
-    values: Array.from(muteRequests.values())
-  });
   
   socket.send(JSON.stringify(request));
 }
 
 // Test function to check if OBS WebSocket is working
 async function testObsConnection() {
-  console.log("Testing OBS WebSocket connection...");
-  
   if (!socket || socket.readyState !== WebSocket.OPEN) {
     console.error("WebSocket not connected for test!");
     return;
@@ -216,14 +198,10 @@ async function testObsConnection() {
     }
   };
   
-  console.log("Sending test request:", request);
   socket.send(JSON.stringify(request));
 }
 
 async function toggleAudioMute(inputName) {
-  console.log(`Toggling mute for: ${inputName}`);
-  
-  // Check if socket is connected
   if (!socket || socket.readyState !== WebSocket.OPEN) {
     console.error("WebSocket not connected!");
     return;
@@ -231,7 +209,6 @@ async function toggleAudioMute(inputName) {
   
   // Set flag to prevent periodic updates from interfering
   muteOperationInProgress = true;
-  console.log(`🔒 Mute operation in progress for: ${inputName}`);
   
   const request = {
     op: 6,
@@ -243,11 +220,9 @@ async function toggleAudioMute(inputName) {
       }
     }
   };
-  console.log("Sending mute toggle request:", request);
   
   try {
     socket.send(JSON.stringify(request));
-    console.log("Mute toggle request sent successfully");
   } catch (error) {
     console.error("Failed to send mute toggle request:", error);
     muteOperationInProgress = false; // Reset flag on error
@@ -289,18 +264,7 @@ async function setAudioVolume(inputName, volume) {
      volumeMultiplier = Math.pow(10, obsDb / 20);
    }
    
-   console.log(`Setting volume for ${inputName}:`);
-   console.log(`  - Raw slider value: ${volume}%`);
-   console.log(`  - Parsed value: ${volumeValue}%`);
-   console.log(`  - Our calculated dB: ${calculatedDb.toFixed(2)} dB`);
-   console.log(`  - OBS target dB: ${obsDb.toFixed(2)} dB`);
-   console.log(`  - Volume multiplier: ${volumeMultiplier.toFixed(6)}`);
-   
-   // Double-check our conversion by converting back
-   const verificationObsDb = volumeMultiplier === 0 ? -60 : 20 * Math.log10(volumeMultiplier);
-   const verificationNormalizedDb = (verificationObsDb + 60) / 60;
-   const verificationSlider = Math.pow(verificationNormalizedDb, 1.5) * 100;
-   console.log(`  - Verification: ${verificationSlider.toFixed(2)}% -> ${verificationObsDb.toFixed(2)} dB (OBS)`);
+
   
   // Check if socket is connected
   if (!socket || socket.readyState !== WebSocket.OPEN) {
@@ -319,11 +283,8 @@ async function setAudioVolume(inputName, volume) {
       }
     }
   };
-  console.log("Sending volume set request:", request);
-  
   try {
     socket.send(JSON.stringify(request));
-    console.log("Volume set request sent successfully");
   } catch (error) {
     console.error("Failed to send volume set request:", error);
   }
@@ -469,14 +430,10 @@ function createAudioSourceElement(source) {
   const dbValue = audioDiv.querySelector('.db-value');
   
   muteBtn.addEventListener('click', () => {
-    console.log(`🔘 Mute button clicked for: ${source.inputName}`);
     toggleAudioMute(source.inputName);
   });
   
   volumeSlider.addEventListener('change', (e) => {
-    console.log(`Slider changed for ${source.inputName}:`);
-    console.log(`  - Event target value: ${e.target.value}`);
-    console.log(`  - Event target type: ${typeof e.target.value}`);
     setAudioVolume(source.inputName, e.target.value);
   });
   
@@ -510,7 +467,6 @@ function createAudioSourceElement(source) {
 
 // Enhanced message handler
 function handleObsMessage(msg) {
-  console.log("Handling message:", msg);
 
   // Handle stream status
   if (msg.op === 7 && msg.d.requestType === "GetStreamStatus") {
@@ -533,29 +489,9 @@ function handleObsMessage(msg) {
     btn.querySelector('.btn-text').textContent = isActive ? 'Stop Replay' : 'Start Replay';
   }
 
-  // Handle all inputs (debug)
-  if (msg.op === 7 && msg.d.requestType === "GetInputList" && msg.d.requestId?.includes("all-inputs")) {
-    const inputs = msg.d.responseData?.inputs || [];
-    console.log("=== ALL INPUTS DEBUG ===");
-    inputs.forEach(input => {
-      console.log(`Input: ${input.inputName} | Kind: ${input.inputKind} | Muted: ${input.inputMuted} | Volume: ${input.inputVolumeMul}`);
-      console.log(`  Full input object:`, input);
-    });
-    console.log("=== END DEBUG ===");
-  }
-
   // Handle audio sources
   if (msg.op === 7 && msg.d.requestType === "GetInputList" && !msg.d.requestId?.includes("all-inputs")) {
     const inputs = msg.d.responseData?.inputs || [];
-    console.log("All inputs received:", inputs);
-    
-    // Debug: Log the first input to see what properties are available
-    if (inputs.length > 0) {
-      console.log("=== FIRST INPUT DEBUG ===");
-      console.log("First input object:", inputs[0]);
-      console.log("Available properties:", Object.keys(inputs[0]));
-      console.log("=== END FIRST INPUT DEBUG ===");
-    }
     
     // More comprehensive audio source filtering
     audioSources = inputs.filter(input => {
@@ -573,16 +509,13 @@ function handleObsMessage(msg) {
              inputKind.includes('ffmpeg');
     });
     
-    console.log("Filtered audio sources:", audioSources);
+    // If this is a UI update request, update the existing controls with the fresh data
+    const isUIUpdate = msg.d.requestId?.includes("update-ui");
+    const isMuteStatusUpdate = msg.d.requestId?.includes("mute-status-update");
     
-         // If this is a UI update request, update the existing controls with the fresh data
-     const isUIUpdate = msg.d.requestId?.includes("update-ui");
-     const isMuteStatusUpdate = msg.d.requestId?.includes("mute-status-update");
-     
-     if (isUIUpdate || isMuteStatusUpdate) {
-       console.log("🔄 UI update requested - updating existing controls with fresh data");
-       updateExistingAudioControls(audioSources);
-     }
+    if (isUIUpdate || isMuteStatusUpdate) {
+      updateExistingAudioControls(audioSources);
+    }
     
     const audioContainer = document.getElementById('audio-sources');
     
@@ -646,23 +579,15 @@ function handleObsMessage(msg) {
 
   // Handle test connection response
   if (msg.op === 7 && msg.d.requestType === "GetVersion") {
-    console.log("OBS Version response:", msg.d);
-    if (!msg.d.error) {
-      console.log("✅ OBS WebSocket connection is working!");
-      console.log("OBS Version:", msg.d.responseData?.obsVersion);
-      console.log("WebSocket Version:", msg.d.responseData?.obsWebSocketVersion);
-    } else {
-      console.error("❌ OBS WebSocket test failed:", msg.d.error);
+    if (msg.d.error) {
+      console.error("OBS WebSocket test failed:", msg.d.error);
     }
   }
 
   // Handle audio control responses
   if (msg.op === 7 && msg.d.requestType === "ToggleInputMute") {
-    console.log("Mute toggle response:", msg.d);
     if (!msg.d.error) {
-      console.log("✅ Mute toggle successful");
       // Get the updated mute status for all audio sources
-      console.log("🔄 Getting updated mute status for all audio sources");
       setTimeout(() => {
         if (socket && socket.readyState === WebSocket.OPEN && audioSources.length > 0) {
           audioSources.forEach(source => {
@@ -672,45 +597,29 @@ function handleObsMessage(msg) {
         // Reset the flag after a delay to allow the GetInputMute responses to come back
         setTimeout(() => {
           muteOperationInProgress = false;
-          console.log("🔓 Mute operation completed, periodic updates resumed");
-          console.log(`🔍 muteRequests at flag reset: size=${muteRequests.size}, keys=${Array.from(muteRequests.keys())}`);
         }, 500);
       }, 100);
     } else {
-      console.error("❌ Mute toggle failed:", msg.d.error);
+      console.error("Mute toggle failed:", msg.d.error);
       muteOperationInProgress = false; // Reset flag on error
     }
   }
 
   if (msg.op === 7 && msg.d.requestType === "SetInputVolume") {
-    console.log("Volume set response:", msg.d);
-    if (!msg.d.error) {
-      console.log("✅ Volume set successful");
-      // Don't refresh UI for volume changes to prevent slider snapping
-      // The slider will stay where the user set it
-    } else {
-      console.error("❌ Volume set failed:", msg.d.error);
+    if (msg.d.error) {
+      console.error("Volume set failed:", msg.d.error);
     }
   }
 
   // Handle input mute status response
   if (msg.op === 7 && msg.d.requestType === "GetInputMute") {
-    console.log("Input mute status response:", msg.d);
     if (!msg.d.error && msg.d.responseData) {
       // Get the input name from our stored request mapping
       const requestId = msg.d.requestId;
-      console.log(`🔍 Looking for requestId: ${requestId}`);
-      console.log(`🔍 muteRequests exists: ${!!muteRequests}`);
-      console.log(`🔍 muteRequests size: ${muteRequests.size}`);
-      console.log(`🔍 All stored requestIds:`, Array.from(muteRequests.keys()));
-      console.log(`🔍 All stored values:`, Array.from(muteRequests.values()));
-      
       const inputName = muteRequests.get(requestId);
       const inputMuted = msg.d.responseData.inputMuted;
       
       if (inputName) {
-        console.log(`🔧 Updating mute status for ${inputName}: ${inputMuted ? 'MUTED' : 'LIVE'}`);
-        
         // Update the specific audio source
         const muteBtn = document.querySelector(`.mute-btn[data-input-name="${inputName}"]`);
         if (muteBtn) {
@@ -724,25 +633,13 @@ function handleObsMessage(msg) {
             const muteStatusText = muteStatus.querySelector('.mute-status-text');
             if (muteStatusText) {
               muteStatusText.textContent = inputMuted ? 'MUTED' : 'LIVE';
-              console.log(`🔇 Updated mute status for ${inputName}: ${inputMuted ? 'MUTED' : 'LIVE'}`);
             }
             muteStatus.className = `mute-status me-2 ${inputMuted ? 'muted' : 'unmuted'}`;
           }
-        } else {
-          console.error(`❌ Could not find mute button for ${inputName}`);
         }
         
         // Clean up the request mapping
         muteRequests.delete(requestId);
-        console.log(`🗑️ Cleaned up requestId: ${requestId}`);
-      } else {
-        console.error(`❌ Could not find input name for requestId: ${requestId}`);
-        console.error(`❌ This might be due to page refresh or timing issues`);
-        console.error(`❌ Map state:`, {
-          exists: !!muteRequests,
-          size: muteRequests.size,
-          keys: Array.from(muteRequests.keys())
-        });
       }
     }
   }
@@ -750,10 +647,6 @@ function handleObsMessage(msg) {
   // Handle volume change events from OBS
   if (msg.op === 5 && msg.d.eventType === "InputVolumeChanged") {
     const eventData = msg.d.eventData;
-    console.log("🎵 Volume changed event:", eventData);
-    console.log(`  - Input: ${eventData.inputName}`);
-    console.log(`  - Volume Mul: ${eventData.inputVolumeMul}`);
-    console.log(`  - Volume dB: ${eventData.inputVolumeDb}`);
     
     // Update the specific slider for this input
     const volumeSlider = document.querySelector(`[data-input-name="${eventData.inputName}"].volume-slider`);
@@ -795,15 +688,8 @@ function handleObsMessage(msg) {
       
       const currentValue = parseFloat(volumeSlider.value);
       
-             console.log(`  - OBS reported dB: ${obsDb.toFixed(2)} dB`);
-       console.log(`  - OBS volume mul: ${eventData.inputVolumeMul.toFixed(6)}`);
-       console.log(`  - Current slider: ${currentValue}%`);
-       console.log(`  - Calculated percentage: ${newValue.toFixed(2)}%`);
-       console.log(`  - Power curve mapping: normalized=${((obsDb + 60) / 60).toFixed(3)} -> slider=${newValue.toFixed(1)}%`);
-      
       if (Math.abs(currentValue - newValue) > 0.1) {
         volumeSlider.value = newValue;
-        console.log(`✅ Updated slider for ${eventData.inputName}: ${currentValue}% -> ${newValue.toFixed(2)}%`);
       }
       
       // Update audio level indicator
@@ -828,24 +714,26 @@ async function connect() {
   socket = new WebSocket(`ws://${obsIP}:4455`);
 
      socket.onopen = () => {
-     console.log("WebSocket opened");
      updateStatus("Connected! Authenticating...", "connecting");
      updateConnectionStatus("Connected");
      
      // Update button state
+     const connectBtn = document.getElementById('connect-btn');
      const reconnectBtn = document.getElementById('reconnect-btn');
      const disconnectBtn = document.getElementById('disconnect-btn');
+     if (connectBtn) {
+       connectBtn.disabled = false;
+       connectBtn.innerHTML = '<i class="bi bi-wifi"></i> Connect';
+     }
      if (reconnectBtn) reconnectBtn.disabled = true;
      if (disconnectBtn) disconnectBtn.disabled = false;
    };
 
   socket.onmessage = async (event) => {
-    console.log("Received message:", event.data);
     const msg = JSON.parse(event.data);
 
     // Handle identification
     if (msg.op === 0) {
-      console.log("Received identification:", msg.d);
       const { authentication, rpcVersion } = msg.d;
       const { challenge, salt } = authentication;
       const auth = await computeAuthResponse(password, salt, challenge);
@@ -857,43 +745,34 @@ async function connect() {
           authentication: auth
         }
       };
-      console.log("Sending identify:", identifyMessage);
       socket.send(JSON.stringify(identifyMessage));
     }
 
     // Handle identified
     if (msg.op === 2) {
-      console.log("Successfully identified!");
       updateStatus("Authenticated! Loading data...", "connecting");
       
       // Load all data
       getSceneList();
       getAudioSources();
-      getAllInputs(); // Debug: get all inputs
       getStreamStatus();
       getRecordStatus();
       getReplayBufferStatus();
       getStats();
       
-      // Test OBS WebSocket connection
-      setTimeout(() => {
-        testObsConnection();
-      }, 1000);
+      // Set up periodic updates
+      statsInterval = setInterval(() => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          getStats();
+        }
+      }, 2000); // Update stats every 2 seconds
       
-                     // Set up periodic updates
-        statsInterval = setInterval(() => {
-          if (socket && socket.readyState === WebSocket.OPEN) {
-            getStats();
-          }
-        }, 2000); // Update stats every 2 seconds
-        
-        // Set up periodic audio source updates to sync with OBS
-         audioSyncInterval = setInterval(() => {
-           if (socket && socket.readyState === WebSocket.OPEN) {
-             console.log("🔄 Periodic audio sync triggered");
-             updateAudioSourceUI();
-           }
-         }, 2000); // Update audio sources every 2 seconds (more frequent)
+      // Set up periodic audio source updates to sync with OBS
+      audioSyncInterval = setInterval(() => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          updateAudioSourceUI();
+        }
+      }, 2000); // Update audio sources every 2 seconds
     }
 
     // Handle all other messages
@@ -901,7 +780,6 @@ async function connect() {
 
     // Original scene handling
     if (msg.op === 7 && msg.d.requestType === "GetSceneList") {
-      console.log("Scene list response:", msg.d);
       if (msg.d.responseData && msg.d.responseData.scenes) {
         const scenes = msg.d.responseData.scenes;
         const container = document.getElementById("scene-buttons");
@@ -909,9 +787,7 @@ async function connect() {
         scenes.forEach(s => {
           container.appendChild(createSceneButton(s.sceneName));
         });
-        console.log("Loaded", scenes.length, "scenes");
       } else {
-        console.error("No scenes in response:", msg.d);
         updateStatus("No scenes found in response", "error");
       }
     }
@@ -933,8 +809,6 @@ async function connect() {
     if (msg.op === 7 && msg.d.requestType === "SetCurrentProgramScene") {
       if (msg.d.error) {
         console.error("Scene switch error:", msg.d.error);
-      } else {
-        console.log("Scene switched successfully");
       }
     }
   };
@@ -943,12 +817,25 @@ async function connect() {
     console.error("WebSocket error:", err);
     updateStatus("Connection error - check OBS WebSocket server and settings", "error");
     updateConnectionStatus("Error");
+    
+    // Reset connect button
+    const connectBtn = document.getElementById('connect-btn');
+    if (connectBtn) {
+      connectBtn.disabled = false;
+      connectBtn.innerHTML = '<i class="bi bi-wifi"></i> Connect';
+    }
   };
 
   socket.onclose = (event) => {
-    console.log("WebSocket closed:", event.code, event.reason);
     updateStatus("Connection closed - make sure OBS is running and WebSocket server is enabled", "error");
     updateConnectionStatus("Disconnected");
+    
+    // Reset connect button
+    const connectBtn = document.getElementById('connect-btn');
+    if (connectBtn) {
+      connectBtn.disabled = false;
+      connectBtn.innerHTML = '<i class="bi bi-wifi"></i> Connect';
+    }
   };
 
   // Add connection timeout
@@ -956,6 +843,13 @@ async function connect() {
     if (socket && socket.readyState !== WebSocket.OPEN) {
       updateStatus("Connection timeout - check OBS WebSocket settings", "error");
       updateConnectionStatus("Timeout");
+      
+      // Reset connect button
+      const connectBtn = document.getElementById('connect-btn');
+      if (connectBtn) {
+        connectBtn.disabled = false;
+        connectBtn.innerHTML = '<i class="bi bi-wifi"></i> Connect';
+      }
     }
   }, 5000); // 5 second timeout
 }
@@ -982,6 +876,23 @@ async function connect() {
        disconnectBtn.disabled = true;
      }
      
+     // Set up connect button event listener
+     const connectBtn = document.getElementById('connect-btn');
+     if (connectBtn) {
+       connectBtn.addEventListener('click', () => {
+         // Get values from input fields
+         obsIP = document.getElementById('obs-ip').value || 'localhost';
+         password = document.getElementById('obs-password').value || '';
+         
+         // Update button state
+         connectBtn.disabled = true;
+         connectBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Connecting...';
+         
+         // Start connection
+         connect();
+       });
+     }
+     
      // Set up stream/record control button event listeners
      const streamBtn = document.getElementById('stream-btn');
      const recordBtn = document.getElementById('record-btn');
@@ -998,9 +909,6 @@ async function connect() {
      if (replayBtn) {
        replayBtn.addEventListener('click', toggleReplayBuffer);
      }
-     
-     // Start the connection
-     connect();
    });
 
 // Load version information from package.json
@@ -1022,9 +930,6 @@ async function loadVersionInfo() {
 
 // Function to update audio source UI without full refresh
 async function updateAudioSourceUI() {
-  console.log("🔄 updateAudioSourceUI called - requesting input list for UI update");
-  console.log(`🔍 muteRequests before updateAudioSourceUI: size=${muteRequests.size}, keys=${Array.from(muteRequests.keys())}`);
-  
   // Get current audio sources to update button states
   const request = {
     op: 6,
@@ -1038,17 +943,10 @@ async function updateAudioSourceUI() {
 
 // Function to update existing audio controls without recreating them
 function updateExistingAudioControls(audioSources) {
-  console.log("Updating existing audio controls with:", audioSources);
-  console.log(`🔍 muteRequests before updateExistingAudioControls: size=${muteRequests.size}, keys=${Array.from(muteRequests.keys())}`);
-  console.log(`🔒 muteOperationInProgress: ${muteOperationInProgress}`);
-  
   // Skip mute status updates if a user-initiated mute operation is in progress
   if (muteOperationInProgress) {
-    console.log("🔒 Skipping periodic mute status updates - user operation in progress");
     return;
   }
-  
-  console.log("🔄 Proceeding with periodic mute status updates");
   
   // Since GetInputList doesn't provide mute/volume status, we need to request it for each source
   audioSources.forEach(source => {
@@ -1062,13 +960,11 @@ function updateExistingAudioControls(audioSources) {
 
 // Function to manually refresh audio sources (for debugging)
 function refreshAudioSources() {
-  console.log("🔄 Manually refreshing audio sources...");
   updateAudioSourceUI();
 }
 
 // Function to force immediate sync with OBS
 function forceSyncWithOBS() {
-  console.log("🚀 Force syncing with OBS...");
   if (socket && socket.readyState === WebSocket.OPEN) {
     const request = {
       op: 6,
@@ -1079,14 +975,12 @@ function forceSyncWithOBS() {
     };
     socket.send(JSON.stringify(request));
   } else {
-    console.error("❌ WebSocket not connected!");
+    console.error("WebSocket not connected!");
   }
 }
 
    // Connection management functions
   function disconnectFromOBS() {
-    console.log("🔌 Disconnecting from OBS...");
-    
     // Clear intervals to prevent null socket access
     if (statsInterval) {
       clearInterval(statsInterval);
@@ -1116,20 +1010,29 @@ function forceSyncWithOBS() {
     updateFPSStatus(0);
     
     // Update button state
+    const connectBtn = document.getElementById('connect-btn');
     const reconnectBtn = document.getElementById('reconnect-btn');
     const disconnectBtn = document.getElementById('disconnect-btn');
+    if (connectBtn) {
+      connectBtn.disabled = false;
+      connectBtn.innerHTML = '<i class="bi bi-wifi"></i> Connect';
+    }
     if (reconnectBtn) reconnectBtn.disabled = false;
     if (disconnectBtn) disconnectBtn.disabled = true;
   }
 
  function reconnectToOBS() {
-   console.log("🔌 Reconnecting to OBS...");
    updateStatus("Reconnecting to OBS...", "connecting");
    updateConnectionStatus("Connecting");
    
    // Update button state
+   const connectBtn = document.getElementById('connect-btn');
    const reconnectBtn = document.getElementById('reconnect-btn');
    const disconnectBtn = document.getElementById('disconnect-btn');
+   if (connectBtn) {
+     connectBtn.disabled = true;
+     connectBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Connecting...';
+   }
    if (reconnectBtn) reconnectBtn.disabled = true;
    if (disconnectBtn) disconnectBtn.disabled = false;
    
@@ -1146,7 +1049,7 @@ function forceSyncWithOBS() {
   window.disconnectFromOBS = disconnectFromOBS;
   window.reconnectToOBS = reconnectToOBS;
   window.checkMuteRequests = () => {
-    console.log("🔍 Current muteRequests state:");
+    console.log("Current muteRequests state:");
     console.log(`  - Size: ${muteRequests.size}`);
     console.log(`  - Keys: ${Array.from(muteRequests.keys())}`);
     console.log(`  - Values: ${Array.from(muteRequests.values())}`);

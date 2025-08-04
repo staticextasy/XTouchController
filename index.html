@@ -80,6 +80,23 @@
             </div>
             <div class="card-body">
               <div class="row g-3">
+                <div class="col-md-4">
+                  <label for="obs-ip" class="form-label">OBS IP Address</label>
+                  <input type="text" class="form-control" id="obs-ip" placeholder="localhost" value="localhost">
+                </div>
+                <div class="col-md-4">
+                  <label for="obs-password" class="form-label">OBS Password</label>
+                  <input type="password" class="form-control" id="obs-password" placeholder="Leave empty if no password">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">&nbsp;</label>
+                  <button class="btn btn-primary w-100" id="connect-btn">
+                    <i class="bi bi-wifi"></i>
+                    Connect
+                  </button>
+                </div>
+              </div>
+              <div class="row g-3 mt-2">
                 <div class="col-md-6">
                   <button class="btn btn-outline-danger w-100" id="disconnect-btn" disabled>
                     <i class="bi bi-wifi-off"></i>
@@ -87,7 +104,7 @@
                   </button>
                 </div>
                 <div class="col-md-6">
-                  <button class="btn btn-outline-success w-100" id="reconnect-btn">
+                  <button class="btn btn-outline-success w-100" id="reconnect-btn" disabled>
                     <i class="bi bi-wifi"></i>
                     Reconnect
                   </button>
