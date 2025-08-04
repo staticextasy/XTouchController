@@ -43,29 +43,39 @@ function initThemeSwitcher() {
     // Remove any existing listeners to prevent duplicates
     btn.removeEventListener('click', handleThemeClick);
     btn.removeEventListener('touchstart', handleThemeTouch);
+    btn.removeEventListener('touchend', handleThemeTouch);
     
-    // Add new listeners
+    // Add new listeners with better mobile support
     btn.addEventListener('click', handleThemeClick);
     btn.addEventListener('touchstart', handleThemeTouch, { passive: false });
+    btn.addEventListener('touchend', handleThemeTouch, { passive: false });
   });
   
   // Force theme application for mobile devices
   forceThemeApplication();
+  
+  // Additional mobile theme enforcement
+  setTimeout(() => {
+    forceThemeApplication();
+  }, 1000);
 }
 
 function handleThemeClick(e) {
   e.preventDefault();
+  e.stopPropagation();
   const theme = e.currentTarget.getAttribute('data-theme');
   setTheme(theme);
 }
 
 function handleThemeTouch(e) {
   e.preventDefault(); // Prevent double-tap zoom
+  e.stopPropagation();
   const theme = e.currentTarget.getAttribute('data-theme');
   setTheme(theme);
 }
 
 function setTheme(theme) {
+  console.log('Setting theme:', theme);
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('obs-theme', theme);
   updateActiveThemeButton(theme);
@@ -73,7 +83,14 @@ function setTheme(theme) {
   // Force re-application for mobile devices
   setTimeout(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    console.log('Theme re-applied:', theme);
   }, 50);
+  
+  // Additional mobile enforcement
+  setTimeout(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    console.log('Theme enforced again:', theme);
+  }, 200);
 }
 
 function updateActiveThemeButton(activeTheme) {
@@ -1186,16 +1203,33 @@ function startReconnectTimer() {
 
 // Page visibility API handling
 function handlePageVisibilityChange() {
-  if (document.hidden) {
-    console.log('Page hidden - maintaining connection');
-  } else {
-    console.log('Page visible - checking connection status');
-    // When page becomes visible, check if we need to reconnect
-    if (connectionState.isConnected && (!socket || socket.readyState !== WebSocket.OPEN)) {
-      console.log('Connection lost while page was hidden, attempting to reconnect...');
-      reconnectAttempts = 0; // Reset attempts when page becomes visible
-      attemptReconnect();
+  if (document.visibilityState === 'visible') {
+    console.log('Page became visible, checking connection and theme...');
+    
+    // Reapply theme for mobile devices
+    forceThemeApplication();
+    
+    // Check if we should attempt to reconnect
+    if (connectionState.isConnected && connectionState.lastConnected) {
+      const lastConnected = new Date(connectionState.lastConnected);
+      const timeSinceConnection = Date.now() - lastConnected.getTime();
+      
+      // If connection was within the last 5 minutes, attempt to reconnect
+      if (timeSinceConnection < 5 * 60 * 1000) {
+        console.log('Page visible and recent connection found, attempting reconnection...');
+        if (autoReconnectEnabled) {
+          attemptReconnect();
+        }
+      } else {
+        // Connection is too old, clear it
+        console.log('Previous connection is too old, clearing...');
+        connectionState.isConnected = false;
+        connectionState.lastConnected = null;
+        localStorage.removeItem('obsConnectionState');
+      }
     }
+  } else {
+    console.log('Page became hidden');
   }
 }
 
@@ -1304,25 +1338,49 @@ async function startQRScanner() {
     // Request camera access with better mobile support
     const constraints = {
       video: {
-        facingMode: 'environment', // Use back camera on mobile
-        width: { ideal: 1280, min: 640 },
-        height: { ideal: 720, min: 480 },
-        aspectRatio: { ideal: 16/9 }
+        facingMode: { ideal: 'environment' }, // Use back camera on mobile
+        width: { ideal: 1280, min: 320, max: 1920 },
+        height: { ideal: 720, min: 240, max: 1080 },
+        aspectRatio: { ideal: 16/9, min: 1, max: 2 }
       }
     };
     
-    // Try to get camera access
-    qrStream = await navigator.mediaDevices.getUserMedia(constraints);
+    // Try to get camera access with fallback options
+    try {
+      qrStream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (fallbackError) {
+      console.log('Primary camera access failed, trying fallback...');
+      // Fallback to any available camera
+      const fallbackConstraints = {
+        video: {
+          facingMode: 'user', // Try front camera
+          width: { ideal: 640, min: 320 },
+          height: { ideal: 480, min: 240 }
+        }
+      };
+      
+      try {
+        qrStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+      } catch (secondFallbackError) {
+        console.log('Front camera failed, trying basic camera...');
+        // Last resort - any camera
+        qrStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
+    }
     
     // Set video source
     video.srcObject = qrStream;
-    video.onloadedmetadata = () => {
-      video.play().catch(e => {
-        console.error('Video play error:', e);
-        status.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Camera started but video playback failed. Please try again.';
-        status.className = 'alert alert-warning';
-      });
-    };
+    
+    // Wait for video to be ready
+    await new Promise((resolve, reject) => {
+      video.onloadedmetadata = () => {
+        video.play().then(resolve).catch(reject);
+      };
+      video.onerror = reject;
+      
+      // Timeout after 10 seconds
+      setTimeout(() => reject(new Error('Video loading timeout')), 10000);
+    });
     
     qrScanning = true;
     
@@ -1335,7 +1393,7 @@ async function startQRScanner() {
   } catch (error) {
     console.error('Camera access error:', error);
     
-    let errorMessage = 'Camera access denied. ';
+    let errorMessage = 'Camera access failed. ';
     
     if (error.name === 'NotAllowedError') {
       errorMessage += 'Please allow camera access in your browser settings and try again.';
@@ -1345,6 +1403,8 @@ async function startQRScanner() {
       errorMessage += 'Camera not supported in this browser.';
     } else if (error.name === 'NotReadableError') {
       errorMessage += 'Camera is already in use by another application.';
+    } else if (error.message === 'Video loading timeout') {
+      errorMessage += 'Camera took too long to start. Please try again.';
     } else {
       errorMessage += 'Please check your camera permissions and try again.';
     }
@@ -1459,6 +1519,8 @@ document.addEventListener('DOMContentLoaded', function() {
 function forceThemeApplication() {
   const savedTheme = localStorage.getItem('obs-theme') || 'ocean';
   
+  console.log('Force applying theme:', savedTheme);
+  
   // Apply theme multiple times to ensure it sticks on mobile
   document.documentElement.setAttribute('data-theme', savedTheme);
   
@@ -1469,10 +1531,29 @@ function forceThemeApplication() {
   setTimeout(() => {
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateActiveThemeButton(savedTheme);
+    console.log('Theme re-applied:', savedTheme);
   }, 50);
   
   // Apply one more time after a longer delay for stubborn mobile browsers
   setTimeout(() => {
     document.documentElement.setAttribute('data-theme', savedTheme);
+    console.log('Theme enforced again:', savedTheme);
   }, 200);
+  
+  // Additional mobile enforcement
+  setTimeout(() => {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateActiveThemeButton(savedTheme);
+    console.log('Final theme enforcement:', savedTheme);
+  }, 1000);
+  
+  // Check if theme was actually applied
+  setTimeout(() => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    console.log(`Theme verification - Current: ${currentTheme}, Expected: ${savedTheme}`);
+    if (currentTheme !== savedTheme) {
+      console.log('Theme mismatch detected, reapplying...');
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+  }, 1500);
 } 
