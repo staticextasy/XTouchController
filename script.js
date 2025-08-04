@@ -13,6 +13,7 @@ let statsInterval = null;
 let audioSyncInterval = null;
 let muteRequests = new Map(); // Use module-level variable instead of window
 let muteOperationInProgress = false; // Flag to prevent interference with user mute operations
+let requestIdCounter = 0; // Counter for unique request IDs
 
 // Theme switcher functionality
 function initThemeSwitcher() {
@@ -168,7 +169,10 @@ async function getAllInputs() {
 
 // Function to get input mute status
 async function getInputMute(inputName) {
-  const requestId = "input-mute-" + Date.now();
+  // Generate a truly unique request ID using counter + timestamp + random
+  requestIdCounter++;
+  const requestId = `input-mute-${Date.now()}-${requestIdCounter}-${Math.random().toString(36).substr(2, 9)}`;
+  
   const request = {
     op: 6,
     d: {
@@ -233,7 +237,7 @@ async function toggleAudioMute(inputName) {
     op: 6,
     d: {
       requestType: "ToggleInputMute",
-      requestId: "mute-toggle-" + Date.now(),
+      requestId: `mute-toggle-${Date.now()}-${++requestIdCounter}-${Math.random().toString(36).substr(2, 9)}`,
       requestData: {
         inputName: inputName
       }
@@ -1147,4 +1151,5 @@ function forceSyncWithOBS() {
     console.log(`  - Keys: ${Array.from(muteRequests.keys())}`);
     console.log(`  - Values: ${Array.from(muteRequests.values())}`);
     console.log(`  - muteOperationInProgress: ${muteOperationInProgress}`);
+    console.log(`  - requestIdCounter: ${requestIdCounter}`);
   }; 
