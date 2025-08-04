@@ -34,11 +34,9 @@ function initThemeSwitcher() {
   const themeBtns = document.querySelectorAll('.theme-btn');
   const savedTheme = localStorage.getItem('obs-theme') || 'ocean';
   
-  // Set initial theme
   document.documentElement.setAttribute('data-theme', savedTheme);
   updateActiveThemeButton(savedTheme);
   
-  // Add click and touch handlers
   themeBtns.forEach(btn => {
     btn.removeEventListener('click', handleThemeClick);
     btn.removeEventListener('touchstart', handleThemeTouch);
@@ -65,6 +63,12 @@ function handleThemeTouch(e) {
   e.stopPropagation();
   const theme = e.currentTarget.getAttribute('data-theme');
   setTheme(theme);
+  
+  // Add visual feedback for mobile
+  e.currentTarget.style.transform = 'scale(0.95)';
+  setTimeout(() => {
+    e.currentTarget.style.transform = '';
+  }, 150);
 }
 
 function setTheme(theme) {
@@ -802,10 +806,12 @@ document.addEventListener('DOMContentLoaded', function() {
   initPageVisibilityHandling();
   restoreConnectionState();
   initQRScanner();
+  initMobileOptimizations();
   
   const disconnectBtn = document.getElementById('disconnect-btn');
   if (disconnectBtn) {
     disconnectBtn.addEventListener('click', disconnectFromOBS);
+    disconnectBtn.addEventListener('touchstart', handleMobileButtonTouch, { passive: false });
     disconnectBtn.disabled = true;
   }
   
@@ -820,6 +826,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       connect();
     });
+    connectBtn.addEventListener('touchstart', handleMobileButtonTouch, { passive: false });
   }
   
   const streamBtn = document.getElementById('stream-btn');
@@ -828,14 +835,17 @@ document.addEventListener('DOMContentLoaded', function() {
   
   if (streamBtn) {
     streamBtn.addEventListener('click', toggleStream);
+    streamBtn.addEventListener('touchstart', handleMobileButtonTouch, { passive: false });
   }
   
   if (recordBtn) {
     recordBtn.addEventListener('click', toggleRecording);
+    recordBtn.addEventListener('touchstart', handleMobileButtonTouch, { passive: false });
   }
   
   if (replayBtn) {
     replayBtn.addEventListener('click', toggleReplayBuffer);
+    replayBtn.addEventListener('touchstart', handleMobileButtonTouch, { passive: false });
   }
 });
 
@@ -1257,4 +1267,41 @@ function forceThemeApplication() {
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateActiveThemeButton(savedTheme);
   }, 100);
+} 
+
+// Mobile-specific optimizations
+function initMobileOptimizations() {
+  // Prevent zoom on double tap
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', function (event) {
+    const now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+      event.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, false);
+  
+  // Improve touch scrolling
+  document.addEventListener('touchmove', function(event) {
+    if (event.scale !== 1) {
+      event.preventDefault();
+    }
+  }, { passive: false });
+  
+  // Add mobile-specific CSS class
+  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    document.body.classList.add('mobile-device');
+  }
+}
+
+// Mobile button touch handler
+function handleMobileButtonTouch(e) {
+  // Add visual feedback
+  e.currentTarget.style.transform = 'scale(0.98)';
+  e.currentTarget.style.opacity = '0.8';
+  
+  setTimeout(() => {
+    e.currentTarget.style.transform = '';
+    e.currentTarget.style.opacity = '';
+  }, 150);
 } 

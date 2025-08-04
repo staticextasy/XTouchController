@@ -7,7 +7,7 @@ const compression = require('compression');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Security middleware
+// Security middleware with better mobile support
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -16,19 +16,41 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
       fontSrc: ["'self'", "https://cdn.jsdelivr.net"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "ws:", "wss:"],
+      connectSrc: ["'self'", "ws:", "wss:", "http:", "https:"],
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: []
     }
-  }
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// Enable CORS for development
-app.use(cors());
+// Enable CORS for development and mobile access
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 
 // Enable compression
 app.use(compression());
+
+// Add mobile-friendly headers
+app.use((req, res, next) => {
+  // Prevent mobile browsers from trying to use HTTPS
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  
+  // Allow mobile browsers to access the site
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  
+  next();
+});
 
 // Serve static files
 app.use(express.static(path.join(__dirname, './')));
@@ -47,7 +69,7 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    version: '1.1.0',
+    version: '1.1.27',
     name: 'X Touch Controller'
   });
 });
@@ -131,13 +153,14 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🎮 X Touch Controller Server`);
   console.log(`📍 Server running on http://localhost:${PORT}`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`⏰ Started at: ${new Date().toLocaleString()}`);
   console.log(`🚀 Press Ctrl+C to stop the server`);
+  console.log(`📱 Mobile access: Use your computer's IP address instead of localhost`);
 });
 
 // Graceful shutdown
