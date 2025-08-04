@@ -11,7 +11,6 @@ A comprehensive web-based controller for OBS Studio with scene switching, stream
 - **📺 Stream & Record Controls** - Start/stop streaming and recording with one click
 - **🎵 Audio Management** - Control audio sources (mute/unmute, volume adjustment)
 - **📊 Real-time Monitoring** - Live status of connection, stream, recording, and FPS
-- **📱 Responsive Design** - Works perfectly on desktop, tablet, and mobile devices
 - **🎨 Theme Customization** - 6 beautiful color themes including dark mode
 - **⚡ Professional UI** - Modern Bootstrap-based interface with smooth animations
 - **🔒 Secure** - Built with security best practices and HTTPS support
