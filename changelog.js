@@ -225,6 +225,58 @@ function loadLocalChangelog() {
       </div>
       
       <div class="release-body">
+        <h5>🔌 Improved Connection UI</h5>
+        <ul>
+          <li>Removed reconnect button for cleaner interface</li>
+          <li>Moved disconnect button to top row, connect button to bottom row</li>
+          <li>Connect button now shows "Connected" and is disabled when connected</li>
+          <li>Better visual feedback during connection process</li>
+          <li>Improved button state management throughout the application</li>
+        </ul>
+        
+        <h5>�� Enhanced Recording Controls</h5>
+        <ul>
+          <li>Added real-time recording state change event handling</li>
+          <li>Recording button now updates immediately when recording starts/stops in OBS</li>
+          <li>Added stream state change event handling for better responsiveness</li>
+          <li>Improved UI synchronization with OBS state</li>
+        </ul>
+        
+        <h5>🔧 Connection Persistence</h5>
+        <ul>
+          <li>Connection state now properly persists between page navigation</li>
+          <li>OBS IP and password are saved and restored automatically</li>
+          <li>Previous connection details are remembered for easy reconnection</li>
+          <li>Better handling of connection restoration on page load</li>
+        </ul>
+        
+        <h5>🎨 UI/UX Improvements</h5>
+        <ul>
+          <li>Simplified connection interface with fewer buttons</li>
+          <li>More intuitive button placement and states</li>
+          <li>Better visual feedback for connection status</li>
+          <li>Improved error handling and user feedback</li>
+        </ul>
+        
+        <h5>🐛 Bug Fixes</h5>
+        <ul>
+          <li>Fixed recording button not updating when recording starts/stops in OBS</li>
+          <li>Resolved connection persistence issues between page navigation</li>
+          <li>Improved button state management and error handling</li>
+          <li>Better cleanup of unused functions and references</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="release-item mb-4">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <h5 class="mb-1">v1.1.25</h5>
+          <p class="text-muted mb-2">Previous Release</p>
+        </div>
+      </div>
+      
+      <div class="release-body">
         <h5>🧹 Cleaned Up Logging</h5>
         <ul>
           <li>Removed excessive debug console.log statements throughout the application</li>
@@ -268,31 +320,13 @@ function loadLocalChangelog() {
     <div class="release-item mb-4">
       <div class="d-flex justify-content-between align-items-start mb-2">
         <div>
-          <h5 class="mb-1">v1.1.24</h5>
-          <p class="text-muted mb-2">Previous Release</p>
-        </div>
-      </div>
-      
-      <div class="release-body">
-        <h5>🔧 Technical Improvements</h5>
-        <ul>
-          <li>Fixed requestId collision by implementing unique ID generation</li>
-          <li>Improved mute status update reliability</li>
-          <li>Enhanced WebSocket connection stability</li>
-        </ul>
-      </div>
-    </div>
-    
-    <div class="release-item mb-4">
-      <div class="d-flex justify-content-between align-items-start mb-2">
-        <div>
           <h5 class="mb-1">v1.1.0</h5>
           <p class="text-muted mb-2">Major Release</p>
         </div>
       </div>
       
       <div class="release-body">
-        <h5>🎉 Major Features</h5>
+        <h5>�� Major Features</h5>
         <ul>
           <li><strong>Node.js Server</strong> - Professional Express.js web server with security features</li>
           <li><strong>Bootstrap UI</strong> - Modern, responsive interface with Bootstrap 5</li>

@@ -636,6 +636,21 @@ function handleObsMessage(msg) {
     }
   }
 
+  // Handle recording state change events
+  if (msg.op === 5 && msg.d.eventType === "RecordStateChanged") {
+    const eventData = msg.d.eventData;
+    const isActive = eventData.outputState === 'OBS_RECORDING_STATE_RECORDING';
+    updateRecordingStatus(isActive ? 'Active' : 'Inactive');
+  }
+
+  // Handle stream state change events
+  if (msg.op === 5 && msg.d.eventType === "StreamStateChanged") {
+    const eventData = msg.d.eventData;
+    const isActive = eventData.outputState === 'OBS_OUTPUT_STATE_STARTING' || 
+                    eventData.outputState === 'OBS_OUTPUT_STATE_STREAMING';
+    updateStreamStatus(isActive ? 'Active' : 'Inactive');
+  }
+
   // Handle volume change events from OBS
   if (msg.op === 5 && msg.d.eventType === "InputVolumeChanged") {
     const eventData = msg.d.eventData;
@@ -718,13 +733,11 @@ async function connect() {
      
      // Update button state
      const connectBtn = document.getElementById('connect-btn');
-     const reconnectBtn = document.getElementById('reconnect-btn');
      const disconnectBtn = document.getElementById('disconnect-btn');
      if (connectBtn) {
-       connectBtn.disabled = false;
-       connectBtn.innerHTML = '<i class="bi bi-wifi"></i> Connect';
+       connectBtn.disabled = true;
+       connectBtn.innerHTML = '<i class="bi bi-wifi"></i> Connected';
      }
-     if (reconnectBtn) reconnectBtn.disabled = true;
      if (disconnectBtn) disconnectBtn.disabled = false;
    };
 
@@ -865,13 +878,7 @@ async function connect() {
      restoreConnectionState();
      
      // Set up disconnect/reconnect button event listeners
-     const reconnectBtn = document.getElementById('reconnect-btn');
      const disconnectBtn = document.getElementById('disconnect-btn');
-     
-     if (reconnectBtn) {
-       reconnectBtn.addEventListener('click', reconnectToOBS);
-       reconnectBtn.disabled = false;
-     }
      
      if (disconnectBtn) {
        disconnectBtn.addEventListener('click', disconnectFromOBS);
@@ -1000,34 +1007,13 @@ function updateExistingAudioControls(audioSources) {
     
     // Update button state
     const connectBtn = document.getElementById('connect-btn');
-    const reconnectBtn = document.getElementById('reconnect-btn');
     const disconnectBtn = document.getElementById('disconnect-btn');
     if (connectBtn) {
       connectBtn.disabled = false;
       connectBtn.innerHTML = '<i class="bi bi-wifi"></i> Connect';
     }
-    if (reconnectBtn) reconnectBtn.disabled = false;
     if (disconnectBtn) disconnectBtn.disabled = true;
   }
-
- function reconnectToOBS() {
-   updateStatus("Reconnecting to OBS...", "connecting");
-   updateConnectionStatus("Connecting");
-   
-   // Update button state
-   const connectBtn = document.getElementById('connect-btn');
-   const reconnectBtn = document.getElementById('reconnect-btn');
-   const disconnectBtn = document.getElementById('disconnect-btn');
-   if (connectBtn) {
-     connectBtn.disabled = true;
-     connectBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Connecting...';
-   }
-   if (reconnectBtn) reconnectBtn.disabled = true;
-   if (disconnectBtn) disconnectBtn.disabled = false;
-   
-   // Start connection
-   connect();
- }
 
 // Function to restore connection state from localStorage
 function restoreConnectionState() {
@@ -1060,9 +1046,10 @@ function restoreConnectionState() {
         if (timeSinceConnection < 5 * 60 * 1000) {
           console.log('Previous connection found, offering reconnection...');
           // Don't auto-reconnect, just update UI to show reconnection is available
-          const reconnectBtn = document.getElementById('reconnect-btn');
-          if (reconnectBtn) {
-            reconnectBtn.disabled = false;
+          const connectBtn = document.getElementById('connect-btn');
+          if (connectBtn) {
+            connectBtn.disabled = false;
+            connectBtn.innerHTML = '<i class="bi bi-wifi"></i> Reconnect';
           }
         }
       }
@@ -1077,7 +1064,6 @@ function restoreConnectionState() {
   window.getAudioSources = getAudioSources;
   window.getAllInputs = getAllInputs;
   window.disconnectFromOBS = disconnectFromOBS;
-  window.reconnectToOBS = reconnectToOBS;
   window.checkMuteRequests = () => {
     console.log("Current muteRequests state:");
     console.log(`  - Size: ${muteRequests.size}`);

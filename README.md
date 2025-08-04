@@ -42,12 +42,9 @@ A comprehensive web-based controller for OBS Studio with scene switching, stream
    - Note your OBS PC's IP address
 
 4. **Configure the application:**
-   - Open `script.js`
-   - Update the configuration variables:
-     ```javascript
-     const password = "YOUR_OBS_WEBSOCKET_PASSWORD"; // Your actual password
-     const obsIP = "YOUR_OBS_PC_IP_ADDRESS"; // Your OBS PC's IP address
-     ```
+   - The application now uses a web interface for configuration
+   - No need to edit script.js files
+   - Connection settings are entered directly in the web interface
 
 5. **Start the server:**
    ```bash
@@ -60,7 +57,8 @@ A comprehensive web-based controller for OBS Studio with scene switching, stream
 
 6. **Access the application:**
    - Open your browser and go to `http://localhost:3000`
-   - The application will automatically connect to OBS
+   - Enter your OBS WebSocket IP address and password in the connection fields
+   - Click "Connect" to establish connection to OBS
 
 ## 🎮 Usage
 
