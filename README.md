@@ -3,7 +3,7 @@
 A comprehensive web-based controller for OBS Studio with scene switching, stream/record controls, audio management, and real-time monitoring via WebSocket connection.
 
 **Current Version:** 1.1.32  
-**Latest Update:** Performance optimizations and enhanced mobile experience
+**Latest Update:** Performance optimizations
 
 ## ✨ Features
 
