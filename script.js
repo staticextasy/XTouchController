@@ -886,9 +886,9 @@ async function connect() {
     updateStatus("Connection closed - make sure OBS is running and WebSocket server is enabled", "error");
     updateConnectionStatus("Disconnected");
     
-    // Update connection state
-    connectionState.isConnected = false;
-    localStorage.setItem('obsConnectionState', JSON.stringify(connectionState));
+    // Only mark as disconnected if this wasn't a page navigation
+    // We keep the connection state in localStorage for auto-reconnect
+    // The connectionState.isConnected will be checked during page visibility changes
     
     // Start reconnection timer if auto-reconnect is enabled
     if (autoReconnectEnabled && connectionState.lastConnected) {
@@ -1099,20 +1099,26 @@ function restoreConnectionState() {
         password = state.password;
       }
       
-      // If we were previously connected, show reconnection option
+      // If we were previously connected, attempt auto-reconnection
       if (state.isConnected && state.lastConnected) {
         const lastConnected = new Date(state.lastConnected);
         const timeSinceConnection = Date.now() - lastConnected.getTime();
         
-        // If connection was within the last 5 minutes, offer to reconnect
+        // If connection was within the last 5 minutes, attempt to reconnect
         if (timeSinceConnection < 5 * 60 * 1000) {
-          console.log('Previous connection found, offering reconnection...');
-          // Don't auto-reconnect, just update UI to show reconnection is available
-          const connectBtn = document.getElementById('connect-btn');
-          if (connectBtn) {
-            connectBtn.disabled = false;
-            connectBtn.innerHTML = '<i class="bi bi-wifi"></i> Reconnect';
-          }
+          console.log('Previous connection found, attempting auto-reconnection...');
+          // Attempt to reconnect automatically
+          setTimeout(() => {
+            if (autoReconnectEnabled) {
+              attemptReconnect();
+            }
+          }, 1000); // Small delay to ensure page is fully loaded
+        } else {
+          // Connection is too old, clear it
+          console.log('Previous connection is too old, clearing...');
+          connectionState.isConnected = false;
+          connectionState.lastConnected = null;
+          localStorage.removeItem('obsConnectionState');
         }
       }
     } catch (error) {
