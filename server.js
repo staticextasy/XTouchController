@@ -62,6 +62,64 @@ app.get('/api/status', (req, res) => {
   });
 });
 
+// GitHub API proxy endpoints
+app.get('/api/github/releases', async (req, res) => {
+  try {
+    const response = await fetch('https://api.github.com/repos/staticextasy/XTouchController/releases');
+    
+    if (!response.ok) {
+      throw new Error(`GitHub API error: ${response.status}`);
+    }
+    
+    const releases = await response.json();
+    res.json(releases);
+  } catch (error) {
+    console.error('GitHub API error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch releases from GitHub',
+      message: error.message 
+    });
+  }
+});
+
+app.get('/api/github/commits', async (req, res) => {
+  try {
+    const response = await fetch('https://api.github.com/repos/staticextasy/XTouchController/commits?per_page=10');
+    
+    if (!response.ok) {
+      throw new Error(`GitHub API error: ${response.status}`);
+    }
+    
+    const commits = await response.json();
+    res.json(commits);
+  } catch (error) {
+    console.error('GitHub API error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch commits from GitHub',
+      message: error.message 
+    });
+  }
+});
+
+app.get('/api/github/latest', async (req, res) => {
+  try {
+    const response = await fetch('https://api.github.com/repos/staticextasy/XTouchController/releases/latest');
+    
+    if (!response.ok) {
+      throw new Error(`GitHub API error: ${response.status}`);
+    }
+    
+    const latestRelease = await response.json();
+    res.json(latestRelease);
+  } catch (error) {
+    console.error('GitHub API error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch latest release from GitHub',
+      message: error.message 
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);

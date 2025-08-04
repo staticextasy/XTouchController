@@ -39,11 +39,11 @@ async function loadChangelog() {
     `;
     errorDisplay.style.display = 'none';
 
-    // Fetch releases from GitHub API
-    const response = await fetch('https://api.github.com/repos/staticextasy/XTouchController/releases');
+    // Fetch releases from our server proxy
+    const response = await fetch('/api/github/releases');
     
     if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status}`);
+      throw new Error(`Server error: ${response.status}`);
     }
     
     const releases = await response.json();
@@ -76,10 +76,10 @@ async function loadChangelog() {
 // Load commit history as fallback
 async function loadCommitHistory() {
   try {
-    const response = await fetch('https://api.github.com/repos/staticextasy/XTouchController/commits?per_page=10');
+    const response = await fetch('/api/github/commits');
     
     if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status}`);
+      throw new Error(`Server error: ${response.status}`);
     }
     
     const commits = await response.json();
@@ -225,6 +225,73 @@ function loadLocalChangelog() {
       </div>
       
       <div class="release-body">
+        <h5>🧹 Cleaned Up Logging</h5>
+        <ul>
+          <li>Removed excessive debug console.log statements throughout the application</li>
+          <li>Kept only essential error logging for troubleshooting</li>
+          <li>Much cleaner console output during normal operation</li>
+        </ul>
+        
+        <h5>🔌 Enhanced Connection UI</h5>
+        <ul>
+          <li>Added input fields for OBS WebSocket IP address and password</li>
+          <li>Added a dedicated Connect button for manual connection control</li>
+          <li>Connection fields default to 'localhost' and empty password</li>
+          <li>Improved button states during connection process</li>
+          <li>Better visual feedback during connection attempts</li>
+        </ul>
+        
+        <h5>🔧 Fixed Version Display</h5>
+        <ul>
+          <li>Updated package.json version to 1.1.25</li>
+          <li>Fixed version display issue where webpage showed incorrect version</li>
+          <li>Version now properly loads from server API</li>
+        </ul>
+        
+        <h5>🎯 Other Improvements</h5>
+        <ul>
+          <li>Removed automatic connection on page load</li>
+          <li>Users now have full control over when to connect to OBS</li>
+          <li>Better error handling and user feedback</li>
+          <li>Cleaner codebase with reduced noise</li>
+        </ul>
+        
+        <h5>🐛 Bug Fixes</h5>
+        <ul>
+          <li>Fixed mute status update race conditions</li>
+          <li>Improved request ID generation for better reliability</li>
+          <li>Enhanced error handling for connection failures</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="release-item mb-4">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <h5 class="mb-1">v1.1.24</h5>
+          <p class="text-muted mb-2">Previous Release</p>
+        </div>
+      </div>
+      
+      <div class="release-body">
+        <h5>🔧 Technical Improvements</h5>
+        <ul>
+          <li>Fixed requestId collision by implementing unique ID generation</li>
+          <li>Improved mute status update reliability</li>
+          <li>Enhanced WebSocket connection stability</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="release-item mb-4">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <h5 class="mb-1">v1.1.0</h5>
+          <p class="text-muted mb-2">Major Release</p>
+        </div>
+      </div>
+      
+      <div class="release-body">
         <h5>🎉 Major Features</h5>
         <ul>
           <li><strong>Node.js Server</strong> - Professional Express.js web server with security features</li>
@@ -233,41 +300,6 @@ function loadLocalChangelog() {
           <li><strong>Audio Controls</strong> - Real-time audio source management</li>
           <li><strong>Status Monitoring</strong> - Live connection, stream, and recording status</li>
           <li><strong>Theme System</strong> - 6 beautiful color themes</li>
-        </ul>
-        
-        <h5>🔧 Technical Improvements</h5>
-        <ul>
-          <li>Separated CSS and JavaScript into external files</li>
-          <li>Added comprehensive error handling</li>
-          <li>Implemented responsive design for all screen sizes</li>
-          <li>Added security headers and CORS support</li>
-          <li>Created professional documentation</li>
-        </ul>
-        
-        <h5>🐛 Bug Fixes</h5>
-        <ul>
-          <li>Fixed theme switcher overlap issues</li>
-          <li>Improved spacing and visual balance</li>
-          <li>Enhanced WebSocket connection reliability</li>
-        </ul>
-      </div>
-    </div>
-    
-    <div class="release-item mb-4">
-      <div class="d-flex justify-content-between align-items-start mb-2">
-        <div>
-          <h5 class="mb-1">v0.9.0</h5>
-          <p class="text-muted mb-2">Initial Release</p>
-        </div>
-      </div>
-      
-      <div class="release-body">
-        <h5>🚀 Initial Features</h5>
-        <ul>
-          <li>Basic OBS WebSocket integration</li>
-          <li>Scene switching functionality</li>
-          <li>Simple web interface</li>
-          <li>GitHub repository setup</li>
         </ul>
       </div>
     </div>
@@ -292,7 +324,7 @@ function refreshChangelog() {
 // Check for updates
 async function checkForUpdates() {
   try {
-    const response = await fetch('https://api.github.com/repos/staticextasy/XTouchController/releases/latest');
+    const response = await fetch('/api/github/latest');
     
     if (!response.ok) {
       return null;
