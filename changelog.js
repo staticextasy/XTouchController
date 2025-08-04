@@ -1,5 +1,5 @@
 // Changelog functionality
-let currentVersion = '1.1.27';
+let currentVersion = '1.1.32';
 
 // Theme switcher functionality (copied from main script for changelog page)
 function initThemeSwitcher() {
@@ -252,22 +252,25 @@ function loadLocalChangelog() {
       </div>
       
       <div class="release-body">
-        <h5>🧹 Code Cleanup</h5>
+        <h5>🔌 Connection Management</h5>
         <ul>
-          <li>Removed excessive console.log statements throughout the application</li>
-          <li>Cleaned up unnecessary debug functions and logging</li>
-          <li>Simplified theme application logic</li>
-          <li>Removed redundant comments and verbose logging</li>
-          <li>Much cleaner console output during normal operation</li>
+          <li>Fixed duplicate OBS WebSocket connections when navigating back from changelog page</li>
+          <li>Added connection state checks to prevent unnecessary reconnection attempts</li>
+          <li>Improved page visibility handling to avoid duplicate connections</li>
+          <li>Better connection restoration logic with active connection detection</li>
+        </ul>
+
+        <h5>🎨 Dark Mode Improvements</h5>
+        <ul>
+          <li>Fixed dark mode text colors that were appearing black</li>
+          <li>Added comprehensive text color rules for all elements in dark mode</li>
+          <li>Improved input field styling in dark mode</li>
+          <li>Enhanced contrast and readability for dark mode theme</li>
         </ul>
 
         <h5>📱 QR Code Scanner</h5>
         <ul>
-          <li>Added QR code scanning for easy OBS connection setup</li>
-          <li>Scan QR codes with format: obsws://localhost:4455/SERVER-PASSWORD</li>
-          <li>Automatically fills connection fields when QR code is detected</li>
-          <li>Camera access with fallback to manual entry</li>
-          <li>Real-time QR code detection and validation</li>
+          <li>QR code scanning feature temporarily removed for further testing</li>
         </ul>
 
         <h5>🍎 Safari/iPad Compatibility</h5>

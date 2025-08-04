@@ -811,52 +811,63 @@ async function connect() {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
+  // Load version information
   loadVersionInfo();
-  forceThemeApplication();
-  initThemeSwitcher();
-  initPageVisibilityHandling();
-  restoreConnectionState();
-  initQRScanner();
-  initMobileOptimizations();
   
+  // Force theme application first
+  forceThemeApplication();
+  
+  // Initialize theme switcher
+  initThemeSwitcher();
+  
+  // Initialize page visibility handling
+  initPageVisibilityHandling();
+  
+  // Restore connection state from localStorage
+  restoreConnectionState();
+  
+  // QR code scanner removed for now
+  
+  // Set up disconnect/reconnect button event listeners
   const disconnectBtn = document.getElementById('disconnect-btn');
+  
   if (disconnectBtn) {
     disconnectBtn.addEventListener('click', disconnectFromOBS);
-    disconnectBtn.addEventListener('touchstart', handleMobileButtonTouch, { passive: false });
     disconnectBtn.disabled = true;
   }
   
+  // Set up connect button event listener
   const connectBtn = document.getElementById('connect-btn');
   if (connectBtn) {
     connectBtn.addEventListener('click', () => {
+      // Get values from input fields
       obsIP = document.getElementById('obs-ip').value || 'localhost';
       password = document.getElementById('obs-password').value || '';
       
+      // Update button state
       connectBtn.disabled = true;
       connectBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Connecting...';
       
+      // Start connection
       connect();
     });
-    connectBtn.addEventListener('touchstart', handleMobileButtonTouch, { passive: false });
   }
   
+  // Set up stream/record control button event listeners
   const streamBtn = document.getElementById('stream-btn');
   const recordBtn = document.getElementById('record-btn');
   const replayBtn = document.getElementById('replay-btn');
   
   if (streamBtn) {
     streamBtn.addEventListener('click', toggleStream);
-    streamBtn.addEventListener('touchstart', handleMobileButtonTouch, { passive: false });
   }
   
   if (recordBtn) {
     recordBtn.addEventListener('click', toggleRecording);
-    recordBtn.addEventListener('touchstart', handleMobileButtonTouch, { passive: false });
   }
   
   if (replayBtn) {
     replayBtn.addEventListener('click', toggleReplayBuffer);
-    replayBtn.addEventListener('touchstart', handleMobileButtonTouch, { passive: false });
   }
 });
 
@@ -967,12 +978,17 @@ function restoreConnectionState() {
         const timeSinceConnection = Date.now() - lastConnected.getTime();
         
         if (timeSinceConnection < 5 * 60 * 1000) {
+          console.log('Previous connection found, attempting auto-reconnection...');
+          // Check if we already have an active connection before attempting reconnect
           if (!socket || socket.readyState !== WebSocket.OPEN) {
+            // Attempt to reconnect automatically
             setTimeout(() => {
               if (autoReconnectEnabled) {
                 attemptReconnect();
               }
-            }, 1000);
+            }, 1000); // Small delay to ensure page is fully loaded
+          } else {
+            console.log('Connection already active, skipping auto-reconnection');
           }
         } else {
           connectionState.isConnected = false;
@@ -1037,24 +1053,17 @@ function startReconnectTimer() {
 
 // Page visibility API handling
 function handlePageVisibilityChange() {
-  if (document.visibilityState === 'visible') {
-    forceThemeApplication();
-    
-    if (connectionState.isConnected && connectionState.lastConnected) {
-      const lastConnected = new Date(connectionState.lastConnected);
-      const timeSinceConnection = Date.now() - lastConnected.getTime();
-      
-      if (timeSinceConnection < 5 * 60 * 1000) {
-        if (!socket || socket.readyState !== WebSocket.OPEN) {
-          if (autoReconnectEnabled) {
-            attemptReconnect();
-          }
-        }
-      } else {
-        connectionState.isConnected = false;
-        connectionState.lastConnected = null;
-        localStorage.removeItem('obsConnectionState');
-      }
+  if (document.hidden) {
+    console.log('Page hidden - maintaining connection');
+  } else {
+    console.log('Page visible - checking connection status');
+    // When page becomes visible, check if we need to reconnect
+    if (connectionState.isConnected && (!socket || socket.readyState !== WebSocket.OPEN)) {
+      console.log('Connection lost while page was hidden, attempting to reconnect...');
+      reconnectAttempts = 0; // Reset attempts when page becomes visible
+      attemptReconnect();
+    } else if (socket && socket.readyState === WebSocket.OPEN) {
+      console.log('Connection is already active, no reconnection needed');
     }
   }
 }
@@ -1071,270 +1080,7 @@ function initPageVisibilityHandling() {
   });
 }
 
-// QR Code Scanner functionality
-let qrStream = null;
-let qrScanning = false;
-
-function initQRScanner() {
-  const qrScanBtn = document.getElementById('qr-scan-btn');
-  const qrManualBtn = document.getElementById('qr-manual-btn');
-  
-  if (qrScanBtn) {
-    // Remove existing listeners to prevent duplicates
-    qrScanBtn.removeEventListener('click', openQRScanner);
-    qrScanBtn.removeEventListener('touchstart', handleQRScanTouch);
-    qrScanBtn.removeEventListener('touchend', handleQRScanTouch);
-    
-    // Add click listener
-    qrScanBtn.addEventListener('click', openQRScanner);
-    
-    // Add touch listeners for mobile
-    qrScanBtn.addEventListener('touchstart', handleQRScanTouch, { passive: false });
-    qrScanBtn.addEventListener('touchend', handleQRScanTouch, { passive: false });
-  }
-  
-  if (qrManualBtn) {
-    // Remove existing listeners
-    qrManualBtn.removeEventListener('click', handleQRManualClick);
-    qrManualBtn.removeEventListener('touchstart', handleQRManualTouch);
-    qrManualBtn.removeEventListener('touchend', handleQRManualTouch);
-    
-    // Add click listener
-    qrManualBtn.addEventListener('click', handleQRManualClick);
-    
-    // Add touch listeners for mobile
-    qrManualBtn.addEventListener('touchstart', handleQRManualTouch, { passive: false });
-    qrManualBtn.addEventListener('touchend', handleQRManualTouch, { passive: false });
-  }
-}
-
-function handleQRScanTouch(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  openQRScanner();
-}
-
-function handleQRManualClick() {
-  const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
-  if (modal) {
-    modal.hide();
-  }
-  document.getElementById('obs-ip').focus();
-}
-
-function handleQRManualTouch(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
-  if (modal) {
-    modal.hide();
-  }
-  document.getElementById('obs-ip').focus();
-}
-
-function openQRScanner() {
-  console.log('Opening QR scanner...'); // Debug log
-  const modal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
-  modal.show();
-  
-  setTimeout(() => {
-    startQRScanner();
-  }, 500);
-}
-
-async function startQRScanner() {
-  const video = document.getElementById('qr-video');
-  const status = document.getElementById('qr-status');
-  
-  try {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      throw new Error('Camera access not supported in this browser');
-    }
-    
-    // Try multiple camera configurations for mobile
-    const constraints = {
-      video: {
-        facingMode: { ideal: 'environment' },
-        width: { ideal: 1280, min: 320, max: 1920 },
-        height: { ideal: 720, min: 240, max: 1080 },
-        aspectRatio: { ideal: 16/9, min: 1, max: 2 }
-      }
-    };
-    
-    let qrStream = null;
-    
-    // Try primary configuration
-    try {
-      qrStream = await navigator.mediaDevices.getUserMedia(constraints);
-    } catch (fallbackError) {
-      // Try front camera
-      const frontCameraConstraints = {
-        video: {
-          facingMode: 'user',
-          width: { ideal: 640, min: 320 },
-          height: { ideal: 480, min: 240 }
-        }
-      };
-      
-      try {
-        qrStream = await navigator.mediaDevices.getUserMedia(frontCameraConstraints);
-      } catch (secondFallbackError) {
-        // Try any available camera
-        try {
-          qrStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        } catch (thirdFallbackError) {
-          // Try with minimal constraints
-          qrStream = await navigator.mediaDevices.getUserMedia({ 
-            video: { 
-              width: { min: 320 }, 
-              height: { min: 240 } 
-            } 
-          });
-        }
-      }
-    }
-    
-    video.srcObject = qrStream;
-    
-    // Wait for video to be ready with timeout
-    await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error('Video loading timeout'));
-      }, 15000);
-      
-      video.onloadedmetadata = () => {
-        clearTimeout(timeout);
-        video.play().then(resolve).catch(reject);
-      };
-      
-      video.onerror = (error) => {
-        clearTimeout(timeout);
-        reject(error);
-      };
-      
-      // Also try oncanplay
-      video.oncanplay = () => {
-        clearTimeout(timeout);
-        resolve();
-      };
-    });
-    
-    qrScanning = true;
-    
-    status.innerHTML = '<i class="bi bi-camera"></i> Camera active. Point at QR code...';
-    status.className = 'alert alert-success';
-    
-    scanQRCode();
-    
-  } catch (error) {
-    let errorMessage = 'Camera access failed. ';
-    
-    if (error.name === 'NotAllowedError') {
-      errorMessage += 'Please allow camera access in your browser settings and try again.';
-    } else if (error.name === 'NotFoundError') {
-      errorMessage += 'No camera found on this device.';
-    } else if (error.name === 'NotSupportedError') {
-      errorMessage += 'Camera not supported in this browser.';
-    } else if (error.name === 'NotReadableError') {
-      errorMessage += 'Camera is already in use by another application.';
-    } else if (error.message === 'Video loading timeout') {
-      errorMessage += 'Camera took too long to start. Please try again.';
-    } else {
-      errorMessage += `Error: ${error.message}. Please check your camera permissions and try again.`;
-    }
-    
-    status.innerHTML = `<i class="bi bi-exclamation-triangle"></i> ${errorMessage}`;
-    status.className = 'alert alert-warning';
-    
-    const manualBtn = document.getElementById('qr-manual-btn');
-    if (manualBtn) {
-      manualBtn.style.display = 'block';
-      manualBtn.innerHTML = '<i class="bi bi-keyboard"></i> Enter Connection Details Manually';
-    }
-  }
-}
-
-function scanQRCode() {
-  if (!qrScanning) return;
-  
-  const video = document.getElementById('qr-video');
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
-  
-  if (video.videoWidth === 0) {
-    setTimeout(scanQRCode, 100);
-    return;
-  }
-  
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  context.drawImage(video, 0, 0, canvas.width, canvas.height);
-  
-  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-  const code = jsQR(imageData.data, imageData.width, imageData.height);
-  
-  if (code) {
-    handleQRCodeResult(code.data);
-    return;
-  }
-  
-  setTimeout(scanQRCode, 100);
-}
-
-function handleQRCodeResult(qrData) {
-  const obsUrlPattern = /^obsws:\/\/([^:]+):(\d+)\/(.+)$/;
-  const match = qrData.match(obsUrlPattern);
-  
-  if (match) {
-    const [, host, port, password] = match;
-    
-    document.getElementById('obs-ip').value = host;
-    document.getElementById('obs-password').value = password;
-    
-    const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
-    if (modal) {
-      modal.hide();
-    }
-    
-    const status = document.getElementById('qr-status');
-    status.innerHTML = '<i class="bi bi-check-circle"></i> QR code scanned successfully! Connection details filled.';
-    status.className = 'alert alert-success';
-    
-    stopQRScanner();
-    
-  } else {
-    const status = document.getElementById('qr-status');
-    status.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Invalid QR code format. Expected: obsws://host:port/password';
-    status.className = 'alert alert-warning';
-    
-    setTimeout(() => {
-      status.innerHTML = '<i class="bi bi-camera"></i> Camera active. Point at QR code...';
-      status.className = 'alert alert-success';
-    }, 3000);
-  }
-}
-
-function stopQRScanner() {
-  qrScanning = false;
-  
-  if (qrStream) {
-    qrStream.getTracks().forEach(track => track.stop());
-    qrStream = null;
-  }
-  
-  const video = document.getElementById('qr-video');
-  if (video) {
-    video.srcObject = null;
-  }
-}
-
-// Clean up QR scanner when modal is closed
-document.addEventListener('DOMContentLoaded', function() {
-  const qrModal = document.getElementById('qrScannerModal');
-  if (qrModal) {
-    qrModal.addEventListener('hidden.bs.modal', stopQRScanner);
-  }
-}); 
+// QR Code Scanner functionality removed for now 
 
 // Force theme application for mobile devices
 function forceThemeApplication() {
