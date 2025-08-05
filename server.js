@@ -92,6 +92,8 @@ app.get('/changelog', (req, res) => {
   res.sendFile(path.join(__dirname, 'changelog.html'));
 });
 
+
+
 // Health check endpoint with version info for cache busting
 app.get('/health', (req, res) => {
   const version = require('./package.json').version;

@@ -1,3 +1,5 @@
+console.log('Script.js loaded and executing');
+
 // Global variables
 let socket;
 let obsIP = "localhost";
@@ -618,20 +620,39 @@ function handleObsMessage(msg) {
 
 // Enhanced connection function
 async function connect() {
+  console.log('Connect function called');
+  console.log('obsIP:', obsIP);
+  console.log('password:', password ? '[SET]' : '[NOT SET]');
+  
   if (socket && socket.readyState === WebSocket.OPEN) {
+    console.log('Socket already open, returning');
     return;
   }
   
   if (socket) {
+    console.log('Closing existing socket');
     socket.close();
     socket = null;
   }
   
+  // If obsIP is localhost and we're on mobile, try to use the server's IP
+  let targetIP = obsIP;
+  if (obsIP === 'localhost' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    // Try to get the server's IP from the current URL
+    const currentHost = window.location.hostname;
+    if (currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
+      targetIP = currentHost;
+      console.log('Mobile device detected, using server IP:', targetIP);
+    }
+  }
+  
+  console.log('Attempting WebSocket connection to:', `ws://${targetIP}:4455`);
   updateStatus("Connecting to OBS...", "connecting");
   updateConnectionStatus("Connecting");
-  socket = new WebSocket(`ws://${obsIP}:4455`);
+  socket = new WebSocket(`ws://${targetIP}:4455`);
 
   socket.onopen = () => {
+    console.log('WebSocket connection opened successfully');
     updateStatus("Connected! Authenticating...", "connecting");
     updateConnectionStatus("Connected");
     
@@ -728,6 +749,12 @@ async function connect() {
   };
 
   socket.onerror = (err) => {
+    console.error('WebSocket connection error:', err);
+    console.error('Error details:', {
+      readyState: socket.readyState,
+      url: socket.url,
+      targetIP: targetIP
+    });
     updateStatus("Connection error - check OBS WebSocket server and settings", "error");
     updateConnectionStatus("Error");
     
@@ -739,6 +766,12 @@ async function connect() {
   };
 
   socket.onclose = (event) => {
+    console.log('WebSocket connection closed:', event);
+    console.log('Close event details:', {
+      code: event.code,
+      reason: event.reason,
+      wasClean: event.wasClean
+    });
     updateStatus("Connection closed - make sure OBS is running and WebSocket server is enabled", "error");
     updateConnectionStatus("Disconnected");
     
@@ -769,60 +802,144 @@ async function connect() {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
-  // Load version information
-  loadVersionInfo();
+  console.log('DOMContentLoaded event fired - starting initialization');
   
-  // Initialize theme switcher
-  initThemeSwitcher();
-  
-  // Initialize page visibility handling
-  initPageVisibilityHandling();
-  
-  // Restore connection state from localStorage
-  restoreConnectionState();
-  
-  // QR code scanner removed for now
-  
-  // Set up disconnect/reconnect button event listeners
-  const disconnectBtn = document.getElementById('disconnect-btn');
-  
-  if (disconnectBtn) {
-    disconnectBtn.addEventListener('click', disconnectFromOBS);
-    disconnectBtn.disabled = true;
-  }
-  
-  // Set up connect button event listener
-  const connectBtn = document.getElementById('connect-btn');
-  if (connectBtn) {
-    connectBtn.addEventListener('click', () => {
-      // Get values from input fields
-      obsIP = document.getElementById('obs-ip').value || 'localhost';
-      password = document.getElementById('obs-password').value || '';
+  try {
+    // Load version information
+    loadVersionInfo();
+    
+    // Initialize theme switcher
+    initThemeSwitcher();
+    
+    // Initialize page visibility handling
+    initPageVisibilityHandling();
+    
+    // Initialize mobile optimizations
+    initMobileOptimizations();
+    
+    // Restore connection state from localStorage
+    restoreConnectionState();
+    
+    // QR code scanner removed for now
+    
+    // Set up disconnect/reconnect button event listeners
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    
+    if (disconnectBtn) {
+      disconnectBtn.addEventListener('click', disconnectFromOBS);
+      disconnectBtn.disabled = true;
+    }
+    
+    // Set up connect button event listener with mobile support
+    console.log('Looking for connect button...');
+    const connectBtn = document.getElementById('connect-btn');
+    console.log('Connect button element found:', connectBtn);
+    
+    if (connectBtn) {
+      // Add a simple test to see if the button is clickable at all
+      console.log('Connect button found:', connectBtn);
+      console.log('Connect button dimensions:', connectBtn.offsetWidth, 'x', connectBtn.offsetHeight);
+      console.log('Connect button position:', connectBtn.offsetLeft, connectBtn.offsetTop);
+      console.log('Connect button z-index:', window.getComputedStyle(connectBtn).zIndex);
+      console.log('Connect button pointer-events:', window.getComputedStyle(connectBtn).pointerEvents);
       
-      // Update button state
-      connectBtn.disabled = true;
-      connectBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Connecting...';
+      // Test if button is visible and clickable
+      const rect = connectBtn.getBoundingClientRect();
+      console.log('Connect button bounding rect:', rect);
+      console.log('Connect button is visible:', rect.width > 0 && rect.height > 0);
+      // Function to handle connect button click/touch
+      const handleConnect = () => {
+        console.log('Connect button pressed!'); // Debug log
+        
+        // Get values from input fields
+        obsIP = document.getElementById('obs-ip').value || 'localhost';
+        password = document.getElementById('obs-password').value || '';
+        
+        // Update button state
+        connectBtn.disabled = true;
+        connectBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Connecting...';
+        
+        // Start connection
+        connect();
+      };
       
-      // Start connection
-      connect();
-    });
-  }
-  
-  // Set up stream/record control button event listeners
-  const streamBtn = document.getElementById('stream-btn');
-  const recordBtn = document.getElementById('record-btn');
-  const replayBtn = document.getElementById('replay-btn');
-  
-  if (streamBtn) {
-    streamBtn.addEventListener('click', toggleStream);
-  }
-  
-  if (recordBtn) {
-    recordBtn.addEventListener('click', toggleRecording);
-  }
-  
-  if (replayBtn) {
-    replayBtn.addEventListener('click', toggleReplayBuffer);
+      // Add both click and touchstart listeners for better mobile support
+      connectBtn.addEventListener('click', (e) => {
+        console.log('Connect button: Click event triggered');
+        console.log('Connect button: Event target:', e.target);
+        console.log('Connect button: Event currentTarget:', e.currentTarget);
+        console.log('Connect button: Button disabled:', connectBtn.disabled);
+        console.log('Connect button: Button visible:', connectBtn.offsetWidth > 0 && connectBtn.offsetHeight > 0);
+        handleConnect();
+      });
+      connectBtn.addEventListener('touchstart', (e) => {
+        console.log('Connect button: Touchstart event triggered');
+        console.log('Connect button: Event target:', e.target);
+        console.log('Connect button: Event currentTarget:', e.currentTarget);
+        console.log('Connect button: Button disabled:', connectBtn.disabled);
+        console.log('Connect button: Button visible:', connectBtn.offsetWidth > 0 && connectBtn.offsetHeight > 0);
+        e.preventDefault();
+        e.stopPropagation();
+        handleConnect();
+      }, { passive: false });
+      
+      // Add additional mobile event listeners as fallback
+      connectBtn.addEventListener('touchend', (e) => {
+        console.log('Connect button: Touchend event triggered');
+        console.log('Connect button: Event target:', e.target);
+        console.log('Connect button: Event currentTarget:', e.currentTarget);
+        e.preventDefault();
+        e.stopPropagation();
+        handleConnect();
+      }, { passive: false });
+      
+      // Add mousedown listener for better mobile compatibility
+      connectBtn.addEventListener('mousedown', (e) => {
+        console.log('Connect button: Mousedown event triggered');
+        console.log('Connect button: Event target:', e.target);
+        console.log('Connect button: Event currentTarget:', e.currentTarget);
+        e.preventDefault();
+        e.stopPropagation();
+        handleConnect();
+      });
+    }
+    
+    // Set up stream/record control button event listeners with mobile support
+    const streamBtn = document.getElementById('stream-btn');
+    const recordBtn = document.getElementById('record-btn');
+    const replayBtn = document.getElementById('replay-btn');
+    
+    if (streamBtn) {
+      streamBtn.addEventListener('click', toggleStream);
+      streamBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleStream();
+      }, { passive: false });
+    }
+    
+    if (recordBtn) {
+      recordBtn.addEventListener('click', toggleRecording);
+      recordBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleRecording();
+      }, { passive: false });
+    }
+    
+    if (replayBtn) {
+      replayBtn.addEventListener('click', toggleReplayBuffer);
+      replayBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleReplayBuffer();
+      }, { passive: false });
+    }
+    
+    console.log('Initialization completed successfully');
+    
+  } catch (error) {
+    console.error('Error during initialization:', error);
   }
 });
 
@@ -1039,34 +1156,38 @@ function initPageVisibilityHandling() {
 
 // Mobile-specific optimizations
 function initMobileOptimizations() {
-  // Prevent zoom on double tap
-  let lastTouchEnd = 0;
-  document.addEventListener('touchend', function (event) {
-    const now = (new Date()).getTime();
-    if (now - lastTouchEnd <= 300) {
-      event.preventDefault();
-    }
-    lastTouchEnd = now;
-  }, false);
+  // Check if we're on a mobile device
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
-  // Improve touch scrolling
-  document.addEventListener('touchmove', function(event) {
-    if (event.scale !== 1) {
-      event.preventDefault();
-    }
-  }, { passive: false });
-  
-  // Add mobile-specific CSS class
-  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+  if (isMobile) {
+    console.log('Mobile device detected, applying optimizations...');
     document.body.classList.add('mobile-device');
     
-    // Add touch handlers to all interactive elements
-    const interactiveElements = document.querySelectorAll('button, input, select, textarea, .btn, .form-control, .volume-slider');
+    // Prevent zoom on double tap
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (event) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+    
+    // Improve touch scrolling
+    document.addEventListener('touchmove', function(event) {
+      if (event.scale !== 1) {
+        event.preventDefault();
+      }
+    }, { passive: false });
+    
+    // Add touch handlers to all interactive elements EXCEPT the connect button
+    const interactiveElements = document.querySelectorAll('button:not(#connect-btn), input, select, textarea, .btn:not(#connect-btn), .form-control, .volume-slider');
     interactiveElements.forEach(element => {
-      element.addEventListener('touchstart', function(e) {
-        // Prevent double-tap zoom on interactive elements
-        e.preventDefault();
-      }, { passive: false });
+      // Remove existing touchstart listeners to prevent duplicates
+      element.removeEventListener('touchstart', handleMobileTouch);
+      
+      // Add new touchstart listener
+      element.addEventListener('touchstart', handleMobileTouch, { passive: false });
     });
     
     // Add specific mobile event listeners for theme buttons
@@ -1096,6 +1217,72 @@ function initMobileOptimizations() {
         openQRScanner();
       }, { passive: false });
     }
+    
+    // Add disconnect button mobile support
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    if (disconnectBtn) {
+      disconnectBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        disconnectFromOBS();
+      }, { passive: false });
+    }
+    
+    console.log('Mobile optimizations applied successfully');
+    
+    // Debug connect button for troubleshooting
+    debugMobileTouch('connect-btn');
+  }
+}
+
+// Mobile touch handler function
+function handleMobileTouch(e) {
+  // Prevent double-tap zoom on interactive elements
+  e.preventDefault();
+  
+  // Add visual feedback for buttons
+  if (e.currentTarget.classList.contains('btn')) {
+    e.currentTarget.style.transform = 'scale(0.98)';
+    e.currentTarget.style.opacity = '0.8';
+    
+    setTimeout(() => {
+      e.currentTarget.style.transform = '';
+      e.currentTarget.style.opacity = '';
+    }, 150);
+  }
+}
+
+// Debug function for mobile troubleshooting
+function debugMobileTouch(elementId) {
+  const element = document.getElementById(elementId);
+  if (element) {
+    console.log(`Debug: Adding touch listeners to ${elementId}`);
+    
+    // Add click listener
+    element.addEventListener('click', (e) => {
+      console.log(`Debug: Click event fired on ${elementId}`);
+    });
+    
+    // Add touchstart listener
+    element.addEventListener('touchstart', (e) => {
+      console.log(`Debug: Touchstart event fired on ${elementId}`);
+      console.log(`Debug: Event target:`, e.target);
+      console.log(`Debug: Event currentTarget:`, e.currentTarget);
+      console.log(`Debug: Event type:`, e.type);
+      console.log(`Debug: Event defaultPrevented:`, e.defaultPrevented);
+    }, { passive: false });
+    
+    // Add touchend listener
+    element.addEventListener('touchend', (e) => {
+      console.log(`Debug: Touchend event fired on ${elementId}`);
+    });
+    
+    // Add mousedown listener
+    element.addEventListener('mousedown', (e) => {
+      console.log(`Debug: Mousedown event fired on ${elementId}`);
+    });
+  } else {
+    console.log(`Debug: Element ${elementId} not found`);
   }
 }
 

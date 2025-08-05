@@ -1228,6 +1228,8 @@ footer .btn:hover {
 .mobile-device .btn {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  min-height: 44px; /* Ensure minimum touch target size */
+  min-width: 44px;
 }
 
 .mobile-device .form-control,
@@ -1235,11 +1237,13 @@ footer .btn:hover {
   font-size: 16px !important; /* Prevents zoom on iOS */
   -webkit-appearance: none;
   border-radius: 8px;
+  min-height: 44px; /* Ensure minimum touch target size */
 }
 
 .mobile-device .volume-slider {
   -webkit-appearance: none;
   height: 12px;
+  min-height: 44px; /* Ensure minimum touch target size */
 }
 
 .mobile-device .volume-slider::-webkit-slider-thumb {
@@ -1255,14 +1259,105 @@ footer .btn:hover {
 .mobile-device .theme-btn {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  min-height: 44px;
+  min-width: 44px;
 }
 
 .mobile-device .control-btn {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  min-height: 44px;
 }
 
 .mobile-device .scene-button {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  min-height: 44px;
+}
+
+/* Additional mobile improvements for connect button */
+.mobile-device #connect-btn {
+  min-height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 16px;
+  position: relative;
+  z-index: 1000 !important;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  pointer-events: auto !important;
+}
+
+.mobile-device #disconnect-btn {
+  min-height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 16px;
+  position: relative;
+  z-index: 10;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Ensure connect button is clickable on mobile */
+.mobile-device #connect-btn:active {
+  transform: scale(0.98);
+  opacity: 0.8;
+}
+
+/* Force connect button to be clickable */
+.mobile-device #connect-btn {
+  pointer-events: auto !important;
+  z-index: 9999 !important;
+  position: relative !important;
+}
+
+/* Override any potential blocking elements */
+.mobile-device #connect-btn * {
+  pointer-events: auto !important;
+}
+
+.mobile-device #disconnect-btn:active {
+  transform: scale(0.98);
+  opacity: 0.8;
+}
+
+/* Improve mobile form layout */
+@media (max-width: 768px) {
+  .mobile-device .form-control,
+  .mobile-device .form-select {
+    margin-bottom: 8px;
+  }
+  
+  .mobile-device .btn {
+    margin-bottom: 8px;
+  }
+  
+  /* Ensure connect button is not blocked */
+  .mobile-device .card-body {
+    position: relative;
+    z-index: 1;
+    pointer-events: auto;
+  }
+  
+  .mobile-device #connect-btn {
+    position: relative;
+    z-index: 1000 !important;
+    pointer-events: auto !important;
+  }
+  
+  /* Ensure all parent containers allow pointer events */
+  .mobile-device .card {
+    pointer-events: auto;
+  }
+  
+  .mobile-device .row {
+    pointer-events: auto;
+  }
+  
+  .mobile-device .col-md-4 {
+    pointer-events: auto;
+  }
 } 
