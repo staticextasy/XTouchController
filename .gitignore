@@ -69,3 +69,7 @@ logs
 # Temporary files
 tmp/
 temp/ 
+inline-test.html
+simple-test.html
+.gitignore
+test-theme.html

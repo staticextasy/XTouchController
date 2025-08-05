@@ -441,6 +441,21 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   transition: background 0.3s ease;
   min-height: 100vh;
+  /* Prevent text selection on mobile devices */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  /* Prevent touch callout on iOS */
+  -webkit-touch-callout: none;
+}
+
+/* Allow text selection on form inputs and text areas */
+input, textarea, select {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
 }
 
 /* Main Container */
@@ -469,7 +484,8 @@ h1 {
 
 /* Theme Switcher */
 .theme-switcher {
-  z-index: 1000;
+  z-index: 1055;
+  position: relative;
 }
 
 .theme-btn {
@@ -486,6 +502,13 @@ h1 {
   -webkit-user-select: none;
   user-select: none;
   touch-action: manipulation;
+  /* Ensure buttons are on top and clickable */
+  z-index: 1060;
+  pointer-events: auto;
+  cursor: pointer;
+  /* Force hardware acceleration */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .theme-btn:hover {
@@ -708,6 +731,7 @@ h1 {
   background: rgba(0, 0, 0, 0.1);
   outline: none;
   -webkit-appearance: none;
+  appearance: none;
   cursor: pointer;
 }
 
@@ -813,15 +837,25 @@ h1 {
   }
   
   .theme-btn {
-    width: 40px;
-    height: 40px;
-    min-width: 44px;
-    min-height: 44px;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
     font-size: 1.2rem;
     margin: 2px;
     border-radius: 8px;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    position: relative !important;
+    z-index: 1061 !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    /* Force hardware acceleration */
+    transform: translateZ(0) !important;
+    -webkit-transform: translateZ(0) !important;
   }
   
   .theme-btn:active {
@@ -1225,6 +1259,47 @@ footer .btn:hover {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* iPad-specific improvements */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .theme-switcher {
+    position: fixed !important;
+    top: 15px !important;
+    right: 15px !important;
+    z-index: 1060;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  [data-theme="darkmode"] .theme-switcher {
+    background: rgba(17, 24, 39, 0.95);
+  }
+  
+  .theme-btn {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    font-size: 1.3rem;
+    margin: 3px;
+    border-radius: 10px;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    position: relative !important;
+    z-index: 1061 !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    /* Force hardware acceleration */
+    transform: translateZ(0) !important;
+    -webkit-transform: translateZ(0) !important;
+  }
+}
+
 .mobile-device .btn {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -1236,12 +1311,14 @@ footer .btn:hover {
 .mobile-device .form-select {
   font-size: 16px !important; /* Prevents zoom on iOS */
   -webkit-appearance: none;
+  appearance: none;
   border-radius: 8px;
   min-height: 44px; /* Ensure minimum touch target size */
 }
 
 .mobile-device .volume-slider {
   -webkit-appearance: none;
+  appearance: none;
   height: 12px;
   min-height: 44px; /* Ensure minimum touch target size */
 }

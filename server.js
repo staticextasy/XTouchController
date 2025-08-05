@@ -10,18 +10,7 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Security middleware with better mobile support
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-      fontSrc: ["'self'", "https://cdn.jsdelivr.net"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "ws:", "wss:", "http:", "https:"],
-      frameSrc: ["'none'"],
-      objectSrc: ["'none'"]
-    }
-  },
+  contentSecurityPolicy: false, // Disable CSP for development to allow all scripts
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" },
   hsts: false // Disable HSTS to prevent HTTPS redirects

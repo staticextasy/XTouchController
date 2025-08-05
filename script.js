@@ -39,19 +39,47 @@ let reconnectInterval = null;
 
 // Theme switcher functionality - OPTIMIZED
 function initThemeSwitcher() {
-  ThemeManager.init();
+  console.log('initThemeSwitcher called');
+  
+  if (typeof window.ThemeManager !== 'undefined') {
+    console.log('ThemeManager available, initializing...');
+    window.ThemeManager.init();
+  } else {
+    console.warn('ThemeManager not available in initThemeSwitcher');
+    // Retry after a short delay
+    setTimeout(() => {
+      if (typeof window.ThemeManager !== 'undefined') {
+        console.log('ThemeManager now available, initializing...');
+        window.ThemeManager.init();
+      } else {
+        console.error('ThemeManager still not available after retry');
+      }
+    }, 100);
+  }
 }
 
 function setTheme(theme) {
-  ThemeManager.setTheme(theme);
+  if (typeof window.ThemeManager !== 'undefined') {
+    window.ThemeManager.setTheme(theme);
+  } else {
+    console.warn('ThemeManager not available for setTheme');
+  }
 }
 
 function applyTheme(theme) {
-  ThemeManager.applyTheme(theme);
+  if (typeof window.ThemeManager !== 'undefined') {
+    window.ThemeManager.applyTheme(theme);
+  } else {
+    console.warn('ThemeManager not available for applyTheme');
+  }
 }
 
 function updateActiveThemeButton(activeTheme) {
-  ThemeManager.updateActiveThemeButton(activeTheme);
+  if (typeof window.ThemeManager !== 'undefined') {
+    window.ThemeManager.updateActiveThemeButton(activeTheme);
+  } else {
+    console.warn('ThemeManager not available for updateActiveThemeButton');
+  }
 }
 
 function createSceneButton(sceneName) {
@@ -808,7 +836,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load version information
     loadVersionInfo();
     
-    // Initialize theme switcher
+      // Initialize ThemeManager immediately
+  if (typeof window.ThemeManager !== 'undefined') {
+    console.log('Initializing ThemeManager...');
+    window.ThemeManager.init();
+  } else {
+    console.warn('ThemeManager not available');
+  }
+    
+    // Initialize theme switcher with retry mechanism
     initThemeSwitcher();
     
     // Initialize page visibility handling
@@ -820,7 +856,29 @@ document.addEventListener('DOMContentLoaded', function() {
     // Restore connection state from localStorage
     restoreConnectionState();
     
-    // QR code scanner removed for now
+        // Multiple ThemeManager initialization checks for mobile
+    setTimeout(() => {
+      if (typeof window.ThemeManager !== 'undefined' && !window.ThemeManager.cache.initialized) {
+        console.log('ThemeManager not initialized after 500ms, forcing...');
+        window.ThemeManager.forceInit();
+      }
+    }, 500);
+
+    setTimeout(() => {
+      if (typeof window.ThemeManager !== 'undefined' && !window.ThemeManager.cache.initialized) {
+        console.log('ThemeManager not initialized after 1000ms, forcing...');
+        window.ThemeManager.forceInit();
+      } else if (typeof window.ThemeManager !== 'undefined') {
+        console.log('ThemeManager is properly initialized');
+      }
+    }, 1000);
+
+    setTimeout(() => {
+      if (typeof window.ThemeManager !== 'undefined' && !window.ThemeManager.cache.initialized) {
+        console.log('ThemeManager not initialized after 2000ms, forcing...');
+        window.ThemeManager.forceInit();
+      }
+    }, 2000);
     
     // Set up disconnect/reconnect button event listeners
     const disconnectBtn = document.getElementById('disconnect-btn');
@@ -1190,22 +1248,8 @@ function initMobileOptimizations() {
       element.addEventListener('touchstart', handleMobileTouch, { passive: false });
     });
     
-    // Add specific mobile event listeners for theme buttons
-    const themeBtns = document.querySelectorAll('.theme-btn');
-    themeBtns.forEach(btn => {
-      btn.addEventListener('touchstart', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const theme = this.getAttribute('data-theme');
-        setTheme(theme);
-        
-        // Add visual feedback
-        this.style.transform = 'scale(0.95)';
-        setTimeout(() => {
-          this.style.transform = '';
-        }, 150);
-      }, { passive: false });
-    });
+    // Theme buttons are handled by ThemeManager in utils.js
+    // No need to add additional listeners here
     
     // Ensure QR scanner button works on mobile
     const qrScanBtn = document.getElementById('qr-scan-btn');
@@ -1229,6 +1273,13 @@ function initMobileOptimizations() {
     }
     
     console.log('Mobile optimizations applied successfully');
+    
+    // Force reinitialize ThemeManager for mobile devices
+    if (typeof window.ThemeManager !== 'undefined') {
+      setTimeout(() => {
+        window.ThemeManager.forceInit();
+      }, 200);
+    }
     
     // Debug connect button for troubleshooting
     debugMobileTouch('connect-btn');
@@ -1296,4 +1347,33 @@ function handleMobileButtonTouch(e) {
     e.currentTarget.style.transform = '';
     e.currentTarget.style.opacity = '';
   }, 150);
-} 
+}
+
+// Global touch event handler to prevent text selection and improve theme button handling
+document.addEventListener('touchstart', function(e) {
+  // If touching a theme button, prevent text selection and ensure proper handling
+  if (e.target && e.target.classList.contains('theme-btn')) {
+    console.log('Global touch handler: Theme button touched');
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    
+    // Clear any existing text selection
+    if (window.getSelection) {
+      window.getSelection().removeAllRanges();
+    }
+    
+    // Force the theme button to be the active element
+    e.target.focus();
+    
+    // Add visual feedback
+    e.target.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+      if (e.target && e.target.style) {
+        e.target.style.transform = '';
+      }
+    }, 150);
+  }
+}, { passive: false, capture: true });
+
+console.log('script.js loaded successfully'); 
